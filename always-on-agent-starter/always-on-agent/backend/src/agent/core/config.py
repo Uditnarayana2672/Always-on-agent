@@ -116,6 +116,7 @@ class PowerBIConfig(_Model):
     refresh_cap_per_day: int = Field(ge=0)
     watch: "PowerBIWatch" = Field(default_factory=lambda: PowerBIWatch())
     owned_datasets: list[str] = Field(default_factory=list)  # yours: a single transient retry may be Report
+    retry_own_transient: bool = True  # False: that one retry asks first too (console Settings)
 
 
 class DataRuleConfig(_Model):

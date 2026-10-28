@@ -1,6 +1,7 @@
 # R01 Morning brief (architecture section 8). Ships in shadow: publishing to you is Silent, so the
 # brief still arrives; nothing above Silent runs until the recipe is set live.
 name: morning-brief
+title: Morning brief
 project: general
 status: shadow
 trigger: {schedule: brief}

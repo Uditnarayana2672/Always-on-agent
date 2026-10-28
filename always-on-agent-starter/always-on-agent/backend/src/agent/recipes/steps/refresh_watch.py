@@ -69,7 +69,8 @@ async def steps(ctx: StepContext) -> None:
             purpose="refresh_retry",
             idempotency_key=f"refresh-retry:{dataset_id}:{ctx.trigger.get('external_id')}",
             facts={
-                "owned_datasets": [dataset_id] if facts.owned else [],
+                # Settings can turn the one free retry off: the same retry then asks first.
+                "owned_datasets": [dataset_id] if facts.owned and facts.retry_on_own else [],
                 "last_error_code": code,
                 "agent_retries_today": facts.agent_retries_today,
             },
@@ -85,4 +86,6 @@ def decide_retry(facts: RefreshFacts, code: str | None) -> tuple[bool, str]:
         return False, "A refresh is already running."
     if facts.agent_retries_today:
         return False, "Already retried once today; check it by hand."
+    if not facts.retry_on_own:
+        return True, "A retry is waiting for your approval."
     return True, "Retrying once."

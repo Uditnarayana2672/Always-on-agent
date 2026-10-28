@@ -1,5 +1,6 @@
 # R04 Mention digest: unanswered Teams mentions and one-to-one messages at each check-in.
 name: mention-digest
+title: Mention digest
 project: general
 status: shadow
 trigger: {schedule: checkin}

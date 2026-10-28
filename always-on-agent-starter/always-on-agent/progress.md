@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.15 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
+- Next prompt: 1.16 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
 - Last updated: 2026-10-29
 
 ---
@@ -47,7 +47,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [!] | 1.12 Teams adapter and notifications | A03, F14 | 2026-10-29: `adapters/teams.py`, `channels/teams_notify.py`; respx + contract tests green. Needs you: doctor Teams read (blocked on Q3) |
 | [!] | 1.13 Power BI adapter | A05 | 2026-10-29: `adapters/powerbi.py` + refresh poller; link formats, UTC-day cap, running, 403 hand-off tests green. Needs you: doctor groups + one history (blocked on Q3/Q9) |
 | [x] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | 2026-10-29: `config/recipes/*.yaml`, `recipes/steps/*`, `recipes/views.py`, `runtime/assembly.py`, `runtime/fake.py`; 25 recipe tests + fake-day test; `agentd run --fake --demo-only` posts brief, check-in and digest to the fake Slack DM |
-| [ ] | 1.15 Console API | F15 | |
+| [x] | 1.15 Console API | F15 | 2026-10-29: `api/{app,auth,models,service,stream,server}.py`, `runtime/settings.py`; 20 API tests; `agentd console` prints the one-time link; `agentd run --fake` serves the console on 127.0.0.1:8765 |
 | [ ] | 1.16 Console UI | F15 | |
 | [ ] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | |
 | [ ] | 1.18 End-to-end run and Phase 1 exit check | all | |
@@ -286,6 +286,13 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | `RecordedModel` with no answer left raises `ModelUnavailable` | Steps take their code-only path, as in an outage |
 | 2026-10-29 | `mail.manager`, `newsletter_senders`, `notification_senders`, `folder_*` config | R02 sender rules |
 | 2026-10-29 | `runtime/assembly.Runtime` wires every part once (F01 order); `agentd run --fake` builds it on FakeWorld with a clock starting at the fixtures' Wednesday | One wiring for the real run, the fake run, the API and tests |
+| 2026-10-29 | Console session: random token in Credential Manager (`console_session`); `agentd console` writes a one-time code (sha256 digest, 10 min) into the agent's kv; the running agentd redeems it and sets an HttpOnly SameSite=Strict cookie. Every /api route needs the cookie or `X-Agent-Token`; writes also need `X-Agent-Request`; Host must be 127.0.0.1/localhost (no DNS rebinding); a foreign Origin is refused; no CORS | Prompt 1.15 item 2, plus CSRF and rebinding cases the architecture does not name |
+| 2026-10-29 | Settings changes are kv overrides (`settings.overrides`, `settings.policy`) over config.yaml and policy.yaml, applied at start and live (scheduler, clock, push cap, model routing, registry policy) | The files stay the reviewed baseline; a restart keeps the user's choices |
+| 2026-10-29 | The Settings policy table has the prototype's plain rows, each over a set of tools. Hand off rows are fixed; "Send an email or chat message" is fixed at Ask; writes go no lower than Report (a Silent write would vanish from the digest and its undo); "Trigger a Prod refresh" is fixed at Ask and the "Retry your own failed refresh" row switches `powerbi.retry_own_transient` | Golden rules 2 and 3; a mode_fn cannot be overridden downwards |
+| 2026-10-29 | `/api/stream` sends only kinds and ids (task, approval, activity, worker, control); the console refetches. A watcher compares a database signature every second while a browser is connected, so worker, Slack and scheduler changes show up too | No message text on the stream; one code path for every change |
+| 2026-10-29 | Console recipe saves merge into the YAML file (steps, data classes, context, comments kept), validate against RecipeSpec, refuse Hand off tools, and force new recipes to Shadow; a status change rewrites only the `status:` line. `title:` added to RecipeSpec for the console name | Prompt 1.16 editor; nothing the console sends can widen a recipe |
+| 2026-10-29 | "Test on a sample" runs the recipe harness on fixture data in a throwaway database | Never touches real systems |
+| 2026-10-29 | Marking a task done invalidates its open approvals at once | A closed task must not send anything later |
 
 ## Session log
 
@@ -303,3 +310,4 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | 1.5–1.7 | Done: task graph + approvals, scheduler + controls + notifier, privacy layer; 492 tests, ruff and mypy clean; coverage policy 99–100 %, privacy 97–100 %, runtime (new) 96–97 %, graphs 90–94 %, approvals 89 %+ | Set `me` in config/config.yaml; run 1.8 |
 | 2026-10-29 | 1.8–1.9 | Done: memory and context builder, recipe engine; 558 tests, ruff and mypy clean; coverage memory 82–98 %, recipes 91–97 % | Run 1.10 (Outlook adapters); recipes R01–R06 in 1.14 use the harness |
 | 2026-10-29 | 1.10–1.13 | Code done: Graph mail + calendar, COM parity, Teams, Power BI, pollers, tool registrations, Slack bot + cards + router + commands, Teams self note, email to self; 631 tests pass (excluding `tests/recipes`, which needs the uncommitted `agent.memory`), ruff and mypy clean apart from that import. Real-account checks blocked on Q3/Q5 | Commit `agent/memory`; when IT and Slack say yes: `agentd signin`, `agentd doctor`, `agentd run --fake --real-slack` |
+| 2026-10-29 | 1.15 | Done: console API, auth, SSE, settings overrides; 745 tests, ruff and mypy clean | Run 1.16 (console UI) |

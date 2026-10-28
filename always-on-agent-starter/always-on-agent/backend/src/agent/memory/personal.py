@@ -83,6 +83,20 @@ class PersonalMemory:
         text, trimmed = trim_to_tokens(combined, budget, head_share=0.8)
         return PersonalSection(text=text, tokens=estimate_tokens(text), trimmed=trimmed, files=files)
 
+    def read_file(self, name: str) -> str:
+        """One of FILES as written (the console shows it); empty when missing."""
+        if name not in FILES:
+            raise ValueError(f"not a personal memory file: {name}")
+        try:
+            self.ensure()
+        except OSError:
+            return ""
+        return self._read(self.directory / name)
+
+    def style_count(self) -> int:
+        folder = self.directory / STYLE_DIR
+        return len(list(folder.glob("*.md"))) if folder.is_dir() else 0
+
     def style_samples(self, budget: int = 300) -> list[str]:
         """Writing samples for drafts, newest file first, within budget."""
         folder = self.directory / STYLE_DIR

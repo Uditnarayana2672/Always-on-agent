@@ -78,6 +78,7 @@ from agent.runtime.coordinator import Coordinator
 from agent.runtime.outbox import Outbox
 from agent.runtime.pollers import Pollers
 from agent.runtime.scheduler import Scheduler
+from agent.runtime.settings import apply_overrides, load_overrides, policy_with
 from agent.runtime.workers import HandlerRegistry, NotificationRequest, WorkerPool
 
 log = logging.getLogger(__name__)
@@ -124,6 +125,10 @@ class Runtime:
     views: AgentViews
     retention: RetentionJob
     checkpointer: Any
+    pseudo: Pseudonymiser
+    people: LedgerPeople
+    token_map: TokenMapRepo
+    schedule_runs: ScheduleRunRepo
     _exit: contextlib.AsyncExitStack
     listeners: list[Any] = field(default_factory=list)  # SSE hub and friends: called on changes
     started: bool = False
@@ -203,9 +208,13 @@ class Runtime:
         kv, health = KvRepo(engine, clock), HealthRepo(engine, clock)
         directory, lessons = DirectoryRepo(engine, clock), LessonRepo(engine, clock)
         recipes_state = RecipeStateRepo(engine, clock)
+        overrides, policy_modes = await load_overrides(kv)
+        if overrides:
+            config = apply_overrides(config, overrides)
+            _reconfigure_clock(clock, config)
         ledger = Ledger(tasks, memory, ClockRepo(engine, clock), clock, config.clock)
 
-        registry = Registry(load_policy())
+        registry = Registry(policy_with(load_policy(), policy_modes))
         register_all(registry, adapters)
         level = config.data_rule.level
         gate = Gate(registry, config.company_domains, config.allowed_groups, level)
@@ -213,7 +222,8 @@ class Runtime:
         undo = UndoService(registry, outbox, audit, undo_repo, adapters)
 
         people = LedgerPeople(memory, directory, cipher)
-        pseudo = Pseudonymiser(TokenMapRepo(engine, clock, cipher), people, config.privacy)
+        token_map = TokenMapRepo(engine, clock, cipher)
+        pseudo = Pseudonymiser(token_map, people, config.privacy)
         task_memory = TaskMemory(
             memory, ledger, clock, events, actions, pseudo, config.retention.raw_text_days
         )
@@ -280,9 +290,8 @@ class Runtime:
         )
         coordinator._approvals = approvals
 
-        scheduler = Scheduler(
-            config, clock, coordinator.ingest, ScheduleRunRepo(engine, clock), kv, database_url=url
-        )
+        schedule_runs = ScheduleRunRepo(engine, clock)
+        scheduler = Scheduler(config, clock, coordinator.ingest, schedule_runs, kv, database_url=url)
         checkpointer = await exit_stack.enter_async_context(open_checkpointer(checkpoints))
         resetter = None
         controls = Controls(kv, clock, audit, scheduler, approvals, resetter)
@@ -397,6 +406,10 @@ class Runtime:
             views=views,
             retention=retention,
             checkpointer=checkpointer,
+            pseudo=pseudo,
+            people=people,
+            token_map=token_map,
+            schedule_runs=schedule_runs,
             _exit=exit_stack,
         )
 
@@ -456,9 +469,26 @@ class Runtime:
             ran += 1
         return ran
 
+    def reconfigure(self, config: Config) -> None:
+        """Apply changed console settings to the running parts (schedules, hours, push cap, models)."""
+        self.config = config
+        _reconfigure_clock(self.clock, config)
+        self.scheduler.reconfigure(config)
+        self.notifier.set_cap(config.notifications.max_pushes_per_day)
+        self.views.d.config = config
+        model = self.recipe_runner._model
+        if model is not None and hasattr(model, "_config"):
+            model._config = config
+
     async def notify_listeners(self, kind: str, data: dict[str, Any]) -> None:
         for listener in list(self.listeners):
             try:
                 await listener(kind, data)
             except Exception:
                 log.exception("listener failed", extra={"kind": kind})
+
+
+def _reconfigure_clock(clock: Clock, config: Config) -> None:
+    reconfigure = getattr(clock, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(config)

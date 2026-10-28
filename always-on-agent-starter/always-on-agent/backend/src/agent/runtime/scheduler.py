@@ -244,6 +244,15 @@ class Scheduler:
         self.specs = {s.name: s for s in build_specs(config)}
         self._aps: AsyncIOScheduler | None = None
 
+    def reconfigure(self, config: Config) -> None:
+        """New schedule times from the console: rebuild the base specs, keep the recipe ones."""
+        recipes = [s for n, s in self.specs.items() if n.startswith("recipe:")]
+        self._config = config
+        self._calendar = WorkCalendar(config)
+        self.specs = {s.name: s for s in build_specs(config)} | {s.name: s for s in recipes}
+        if self._aps is not None:
+            self.register()
+
     def attach_controls(self, controls: ScheduleControls) -> None:
         self._controls = controls
 

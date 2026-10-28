@@ -1,6 +1,7 @@
 # R03 Draft replies, on reply tasks opened by inbox triage. Sonnet when allowed, else Haiku (noted
 # on the card). Sending always needs your approval.
 name: draft-replies
+title: Draft replies
 project: general
 status: shadow
 trigger: {event: mail}

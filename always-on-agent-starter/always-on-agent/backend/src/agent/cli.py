@@ -73,12 +73,14 @@ async def _run_fake(data_dir: str | None, demo_only: bool) -> None:
 
 
 async def _serve(runtime: "Runtime") -> None:
-    """Keep the fake agent running (workers, no real schedules) until Ctrl+C."""
-    import asyncio
+    """Keep the fake agent running (workers, no real schedules) and serve the console until Ctrl+C."""
+    from agent.api.server import console_auth, serve
 
     await runtime.start(scheduler=False)
+    auth = console_auth(runtime, fake=True)
     typer.echo("fake agent running; Ctrl+C to stop")
-    await asyncio.Event().wait()
+    typer.echo(f"open the console (link works once, for 10 minutes): {await auth.login_link()}")
+    await serve(runtime, auth, fake=True)
 
 
 def _slack_check() -> None:
@@ -170,9 +172,41 @@ def signin(
 
 
 @app.command()
-def console() -> None:
-    """Print the one-time console link."""
-    typer.echo("not implemented yet")
+def console(
+    data_dir: str | None = typer.Option(
+        None, "--data-dir", help="The --data-dir of a running agentd run --fake."
+    ),
+) -> None:
+    """Print a one-time console link (works once, for ten minutes)."""
+    import asyncio
+
+    typer.echo(asyncio.run(_console_link(data_dir)))
+
+
+async def _console_link(data_dir: str | None) -> str:
+    import asyncio
+    from pathlib import Path
+
+    from agent.api.auth import ConsoleAuth
+    from agent.core.clock import SystemClock
+    from agent.core.config import get_config
+    from agent.db.engine import create_engine_async
+    from agent.db.migrate import upgrade_head
+    from agent.db.repositories import KvRepo
+
+    config = get_config()
+    url = config.database.url
+    if data_dir:
+        url = f"sqlite+aiosqlite:///{(Path(data_dir) / 'agent.db').as_posix()}"
+    await asyncio.to_thread(upgrade_head, url)
+    engine = create_engine_async(url)
+    try:
+        clock = SystemClock(config)
+        # The code goes into the agent's database; the running agentd redeems it and sets the cookie.
+        auth = ConsoleAuth(KvRepo(engine, clock), clock.now_utc, token="-", port=config.console.port)
+        return f"Open this link in your browser: {await auth.login_link()}"
+    finally:
+        await engine.dispose()
 
 
 @app.command()

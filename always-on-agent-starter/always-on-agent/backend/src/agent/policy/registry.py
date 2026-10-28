@@ -85,6 +85,21 @@ class Registry:
             self._policy = load_policy()
         return self._policy
 
+    def set_policy(self, policy: Policy) -> None:
+        """Swap in an edited policy (console settings). Hand off rows must stay exactly as they are."""
+        current = self.policy
+        for name, entry in current.tools.items():
+            if entry.locked and policy.tools.get(name) != entry:
+                raise PolicyViolation(f"{name} is a Hand off action and cannot be changed")
+        for name, entry in policy.tools.items():
+            tool = self._tools.get(name)
+            hand_off = HAND_OFF_NAME.search(name) is not None or (
+                tool is not None and (tool.hard is not None or tool.mode == "hand_off")
+            )
+            if hand_off and entry.mode != "hand_off":
+                raise PolicyViolation(f"{name} is a Hand off action and cannot be changed")
+        self._policy = policy
+
     def register(self, tool: ToolDef) -> ToolDef:
         if tool.name in self._tools:
             raise ValueError(f"tool {tool.name!r} is already registered")

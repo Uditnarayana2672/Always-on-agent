@@ -175,6 +175,7 @@ class MentionLine(BaseModel):
 class RefreshFacts(BaseModel):
     dataset_id: str
     owned: bool
+    retry_on_own: bool = True  # Settings: "Retry your own failed refresh" is Report (True) or Ask
     agent_retries_today: int
     last_error_code: str | None = None
     running: bool = False
@@ -399,27 +400,11 @@ class AgentViews:
         day = self._today(args.day)
         start = self._day_start_utc(day)
         data = DigestData(day=day)
-        rows = await self.d.audit.since(start)
-        for row in rows:
+        data.done = await self.done_lines(start, start + timedelta(days=1))
+        for row in await self.d.audit.since(start):
             if row["at"] >= start + timedelta(days=1):
                 break
-            result = str(row["result"])
-            if row["mode"] == "report" and result == "done" and not str(row["tool"]).startswith("undo:"):
-                op = await self.d.undo.for_audit(int(row["id"]))
-                undo: Literal["available", "done", "none"] = "none"
-                if op is not None:
-                    undo = "done" if op["status"] == "done" else "available"
-                data.done.append(
-                    DoneLine(
-                        audit_id=int(row["id"]),
-                        tool=str(row["tool"]),
-                        text=await self._label(row),
-                        task_id=row.get("task_id"),
-                        recipe=row.get("recipe"),
-                        undo=undo,
-                    )
-                )
-            elif result.startswith("decision:shadow"):
+            if str(row["result"]).startswith("decision:shadow"):
                 recipe = str(row.get("recipe") or "manual")
                 data.shadow[recipe] = data.shadow.get(recipe, 0) + 1
         for action in await self.d.actions.with_statuses(("proposed", "edited")):
@@ -440,6 +425,37 @@ class AgentViews:
                     )
                 )
         return data
+
+    async def done_lines(self, start: datetime, end: datetime) -> list[DoneLine]:
+        """Report actions that ran between start and end, with their undo state (digest, console)."""
+        out = []
+        for row in await self.d.audit.since(start):
+            if row["at"] >= end:
+                break
+            if (
+                row["mode"] != "report"
+                or str(row["result"]) != "done"
+                or str(row["tool"]).startswith("undo:")
+            ):
+                continue
+            op = await self.d.undo.for_audit(int(row["id"]))
+            undo: Literal["available", "done", "none"] = "none"
+            if op is not None:
+                undo = "done" if op["status"] == "done" else "available"
+            out.append(
+                DoneLine(
+                    audit_id=int(row["id"]),
+                    tool=str(row["tool"]),
+                    text=await self._label(row),
+                    task_id=row.get("task_id"),
+                    recipe=row.get("recipe"),
+                    undo=undo,
+                )
+            )
+        return out
+
+    async def label(self, row: dict[str, Any]) -> str:
+        return await self._label(row)
 
     async def _label(self, row: dict[str, Any]) -> str:
         tool = str(row["tool"])
@@ -509,6 +525,7 @@ class AgentViews:
         facts = RefreshFacts(
             dataset_id=args.dataset_id,
             owned=args.dataset_id in self.d.config.powerbi.owned_datasets,
+            retry_on_own=self.d.config.powerbi.retry_own_transient,
             agent_retries_today=retries,
         )
         pbi = self.d.adapters.get("powerbi")

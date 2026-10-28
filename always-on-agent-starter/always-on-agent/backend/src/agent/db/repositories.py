@@ -941,6 +941,23 @@ class LessonRepo(_Repo):
                 .values(status=status, updated_at=self._now())
             )
 
+    async def get(self, lesson_id: str) -> dict[str, Any] | None:
+        return await self._one(select(s.lessons).where(s.lessons.c.id == lesson_id))
+
+    async def by_status(self, *statuses: str) -> list[dict[str, Any]]:
+        query = select(s.lessons).where(s.lessons.c.status.in_(statuses))
+        return await self._all(query.order_by(s.lessons.c.created_at.desc()))
+
+    async def decide(self, lesson_id: str, from_status: str, to_status: str) -> bool:
+        """Compare-and-set, so a second click (or a second tab) does nothing."""
+        async with self._engine.begin() as conn:
+            res = await conn.execute(
+                update(s.lessons)
+                .where(s.lessons.c.id == lesson_id, s.lessons.c.status == from_status)
+                .values(status=to_status, updated_at=self._now())
+            )
+        return res.rowcount == 1
+
     async def active(self, scope: str | None = None) -> list[dict[str, Any]]:
         query = select(s.lessons).where(s.lessons.c.status == "active")
         if scope is not None:

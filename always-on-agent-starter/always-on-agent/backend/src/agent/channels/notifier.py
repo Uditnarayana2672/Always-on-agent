@@ -48,6 +48,9 @@ class Notifier:
         self._kv = kv
         self._sink = sink
 
+    def set_cap(self, max_pushes_per_day: int) -> None:
+        self._cap = max_pushes_per_day
+
     async def notify(self, note: Notification) -> Literal["sent", "batched"]:
         now = self._clock.now_utc()
         if not note.urgent:

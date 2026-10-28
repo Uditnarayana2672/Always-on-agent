@@ -36,6 +36,10 @@ class _BaseClock:
     """Shared calendar logic; subclasses supply now_utc()."""
 
     def __init__(self, config: Config) -> None:
+        self.reconfigure(config)
+
+    def reconfigure(self, config: Config) -> None:
+        """Pick up changed working or quiet hours (console settings) without a restart."""
         self._local = ZoneInfo(config.timezone)
         self._caller = ZoneInfo(config.caller_timezone)
         self._work_days = set(config.work.days)
