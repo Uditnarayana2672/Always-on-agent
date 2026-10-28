@@ -33,6 +33,9 @@ def run(
     ),
     data_dir: str | None = typer.Option(None, "--data-dir", help="With --fake: keep the fake database here."),
     demo_only: bool = typer.Option(False, "--demo-only", help="With --fake: run the fake day, then exit."),
+    live_recipes: bool = typer.Option(
+        False, "--live-recipes", help="With --fake: run the recipes Live against the fake systems."
+    ),
 ) -> None:
     """Run the agent."""
     from agent.core.config import get_config
@@ -50,15 +53,15 @@ def run(
         _slack_check()
         return
 
-    asyncio.run(_run_fake(data_dir, demo_only))
+    asyncio.run(_run_fake(data_dir, demo_only, live_recipes))
 
 
-async def _run_fake(data_dir: str | None, demo_only: bool) -> None:
+async def _run_fake(data_dir: str | None, demo_only: bool, live: bool = False) -> None:
     """Fake mode builds only fakes: no Graph, Slack, Power BI or ICA client is created."""
     from agent.core.config import get_config
     from agent.runtime.fake import build_fake_runtime, run_demo
 
-    runtime, world = await build_fake_runtime(get_config(), data_dir)
+    runtime, world = await build_fake_runtime(get_config(), data_dir, live=live)
     try:
         for status in await world.health():
             typer.echo(f"{status.connector:11} {status.status:8} {status.detail}")

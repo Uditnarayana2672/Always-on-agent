@@ -273,7 +273,9 @@ class ConsoleService:
         watched = len(cfg.powerbi.watch.datasets)
         failed = len(data.powerbi)
         stats = [
-            m.StatOut(value=f"{watched - failed} / {watched}", label="datasets normal"),
+            m.StatOut(value=f"{watched - failed} / {watched}", label="datasets normal")
+            if watched
+            else m.StatOut(value="—", label="no datasets watched"),
             m.StatOut(value=str(len(data.replies_owed)), label="replies owed"),
             m.StatOut(value=str(len(data.stalled)), label="stalled tasks"),
         ]
@@ -324,7 +326,7 @@ class ConsoleService:
         count = len(needs)
         things = "Nothing needs you." if count == 0 else f"{count} thing{'s' if count != 1 else ''} need you."
         return m.BriefOut(
-            day_label=f"{now_local:%a %d %b} · {cfg.schedule.brief} brief",
+            day_label=f"{now_local:%a %d %b} · {cfg.schedule.brief} {now_local:%Z} brief".replace("  ", " "),
             greeting=f"{_greeting(now_local.hour)}{', ' + name if name else ''}. {things}",
             paused=state.paused,
             last_checkin=self._when(last) if last else None,
@@ -438,7 +440,7 @@ class ConsoleService:
             who, name = "system", {"ledger": "Ledger"}.get(channel, channel.capitalize() or "System")
         else:
             who, name = "caller", await self._restore(actor, task_id)
-        text = str(row.get("text_translated") or row["text_pseudonymised"])
+        text = humanise(channel, str(row.get("text_translated") or row["text_pseudonymised"]))
         return m.EventOut(
             time=self._when(row["at"]), who=who, name=name, text=await self._restore(text, task_id)
         )
@@ -451,7 +453,7 @@ class ConsoleService:
         if task.state == "done":
             raise Conflict(f"{task_id} is done; reopen it in its source system first")
         now = self.rt.clock.now_utc()
-        await self.rt.coordinator.ingest(
+        result = await self.rt.coordinator.ingest(
             Event(
                 source="api",
                 kind="api",
@@ -462,6 +464,9 @@ class ConsoleService:
             ),
             "api",
         )
+        if result.event_id is not None:
+            # In the thread at once; the worker's own record of the same event is skipped (source_ref).
+            await self.rt.task_memory.record_trigger(task.id, {"event_id": result.event_id, "source": "api"})
         return m.EventOut(time=self._when(now), who="you", name="You", text=text)
 
     async def mark_done(self, task_id: str) -> m.TaskCardOut:
@@ -821,6 +826,7 @@ class ConsoleService:
                 section=section,
                 profile=self.rt.personal.read_file("profile.md"),
                 preferences=self.rt.personal.read_file("preferences.md"),
+                style_samples=self.rt.personal.style_count(),
             )
         if section == "directory":
             return m.MemoryOut(section=section, directory=await self._directory())
@@ -1077,6 +1083,79 @@ def _first_name(profile: str) -> str | None:
         word = re.split(r"[\s·,|]+", line)[0]
         return word if word.isalpha() and len(word) < 30 else None
     return None
+
+
+STATE_WORDS = {
+    "new": "New",
+    "in_progress": "In progress",
+    "needs_you": "Needs you",
+    "waiting": "Waiting on others",
+    "scheduled": "Scheduled",
+    "done": "Done",
+    "failed": "Failed",
+}
+DID = {
+    "send_mail": "Sent the email",
+    "post_chat": "Posted the message",
+    "save_draft": "Saved the draft in Outlook",
+    "move_mail": "Moved the mail",
+    "flag_mail": "Flagged the mail",
+    "categorise": "Set categories on the mail",
+    "add_hold": "Added a calendar hold",
+    "trigger_refresh": "Started the refresh",
+    "trigger_dataflow_refresh": "Started the dataflow refresh",
+    "open_reply_task": "Opened a reply task",
+}
+VERB = {
+    "sent": "send",
+    "posted": "post",
+    "saved": "save",
+    "moved": "move",
+    "flagged": "flag",
+    "set": "set",
+    "added": "add",
+    "started": "start",
+    "opened": "open",
+}
+OUTCOME_WORDS = {
+    "done": "{did}.",
+    "shadow": "Would have done: {what} (Shadow: logged only).",
+    "proposed": "Drafted: {what}. Waiting for your approval.",
+    "rejected": "You rejected: {what}.",
+    "expired": "Approval expired: {what}.",
+    "handed_off": "Handed to you: {what}.",
+    "blocked": "Blocked by the policy gate: {what}.",
+    "failed": "Failed: {what}.",
+    "invalidated": "No longer current: {what}.",
+    "held": "Held while paused: {what}.",
+}
+_STATE_RE = re.compile(r"^state (\w+) -> (\w+)(?::\s*(.*))?$", re.DOTALL)
+_OUTCOME_RE = re.compile(r"^([a-z_]+): ([a-z_]+)(?: \((.*)\))?$")
+
+
+def humanise(channel: str, text: str) -> str:
+    """Ledger and graph notes are written for the log; the console says them in plain words."""
+    if channel == "ledger":
+        match = _STATE_RE.match(text.strip())
+        if match:
+            to = STATE_WORDS.get(match.group(2), match.group(2))
+            reason = (match.group(3) or "").strip()
+            return f"Moved to {to}" + (f" ({reason})." if reason else ".")
+        return text
+    if channel != "graph":
+        return text
+    out = []
+    for part in text.split("; "):
+        match = _OUTCOME_RE.match(part.strip())
+        if not match:
+            out.append(part)
+            continue
+        tool, status = match.group(1), match.group(2)
+        did = DID.get(tool, tool.replace("_", " ").capitalize())
+        what = did[0].lower() + did[1:]
+        what = re.sub(r"^(\w+?)(ed|t)\b", lambda m: VERB.get(m.group(0), m.group(0)), what)
+        out.append(OUTCOME_WORDS.get(status, "{what}: " + status).format(did=did, what=what))
+    return " ".join(out)
 
 
 def _state_line(state: str) -> str:

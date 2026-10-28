@@ -312,6 +312,7 @@ class MemoryOut(BaseModel):
     section: str
     profile: str | None = None
     preferences: str | None = None
+    style_samples: int = 0  # files in memory/style
     directory: list[DirectoryRow] = Field(default_factory=list)
     lessons: list[LessonOut] = Field(default_factory=list)
     sources: list[SourceOut] = Field(default_factory=list)

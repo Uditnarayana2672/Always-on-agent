@@ -400,6 +400,10 @@ def build_task_graph(deps: GraphDeps, checkpointer: Checkpointer) -> CompiledSta
             await deps.ledger.set_next_action(task_id, next_action)
         if needs_you:
             await move(task_id, "needs_you", next_action or "needs you")
+        elif outcomes and outcomes[-1]["status"] == "done" and outcomes[-1]["tool"] in SENDS_MESSAGE:
+            # The ball is in the other person's court; their next message brings the task back.
+            await deps.ledger.set_next_action(task_id, "Sent; waiting for a reply.")
+            await move(task_id, "waiting", "message sent")
         if deps.memory_hooks is not None:
             await deps.memory_hooks.after_run(task_id)
         return {"current": None, "action_id": None}
@@ -421,6 +425,9 @@ def build_task_graph(deps: GraphDeps, checkpointer: Checkpointer) -> CompiledSta
     graph.add_conditional_edges("execute", after_execute)
     graph.add_edge("update_memory", END)
     return graph.compile(checkpointer=checkpointer)
+
+
+SENDS_MESSAGE = frozenset({"send_mail", "post_chat", "add_comment_by_reply"})
 
 
 def _next_action(outcomes: list[dict[str, Any]], stop_reason: str | None) -> tuple[str | None, bool]:

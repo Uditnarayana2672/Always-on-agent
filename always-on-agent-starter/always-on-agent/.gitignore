@@ -27,3 +27,6 @@ console/dist/
 # coverage data
 .coverage
 htmlcov/
+console/.pixel/
+console/test-results/
+console/playwright-report/

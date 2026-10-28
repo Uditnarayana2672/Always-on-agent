@@ -2,13 +2,15 @@
 
 Fake adapters (FakeWorld) on a clock that starts at the fixtures' Wednesday 09:15 IST and then runs in
 real time, a database in a throwaway folder (or --data-dir), no model (recipes take their code-only
-path), and the fake Slack DM as the notification channel.
+path), and the fake Slack DM as the notification channel. With live=True (`--live-recipes`) the recipes run
+Live against the fakes and a rule-based DemoModel triages and drafts, so approval cards appear.
 
 run_demo() then does a short day: read the fixture mail and chats once (pollers), let the workers
 triage them, make the morning brief, a check-in and the nightly digest, and returns what reached the
 fake Slack DM. The console API is served on top of this runtime (agent.api).
 """
 
+import re
 import tempfile
 from datetime import timedelta
 from pathlib import Path
@@ -17,10 +19,12 @@ from typing import Any
 from agent.adapters.fakes.chat import FakeSlackChannel
 from agent.adapters.fakes.world import FIXTURE_NOW, FakeWorld
 from agent.core.clock import ShiftedClock
-from agent.core.config import Config
+from agent.core.config import CONFIG_DIR, Config
+from agent.model.fake import DemoModel
 from agent.runtime.assembly import Runtime
 from agent.runtime.pollers import WATERMARK
 
+RECIPES_DIR = CONFIG_DIR / "recipes"
 FAKE_ME = "test.user@corp.example"
 FAKE_MANAGER = "anna.keller@corp.example"
 
@@ -38,7 +42,20 @@ def fake_config(config: Config) -> Config:
     )
 
 
-async def build_fake_runtime(config: Config, data_dir: str | Path | None = None) -> tuple[Runtime, FakeWorld]:
+def live_recipes(folder: Path) -> Path:
+    """A copy of config/recipes with every recipe Live: safe only because every adapter is a fake."""
+    target = folder / "recipes"
+    target.mkdir(parents=True, exist_ok=True)
+    for path in sorted(RECIPES_DIR.glob("*.yaml")):
+        text = re.sub(r"(?m)^status:\s*\S+", "status: live", path.read_text(encoding="utf-8"), count=1)
+        (target / path.name).write_text(text, encoding="utf-8")
+    return target
+
+
+async def build_fake_runtime(
+    config: Config, data_dir: str | Path | None = None, *, live: bool = False
+) -> tuple[Runtime, FakeWorld]:
+    """live=True runs the recipes Live against the fakes, with the rule-based DemoModel drafting."""
     config = fake_config(config)
     folder = Path(data_dir) if data_dir else Path(tempfile.mkdtemp(prefix="agentd-fake-"))
     folder.mkdir(parents=True, exist_ok=True)
@@ -53,6 +70,8 @@ async def build_fake_runtime(config: Config, data_dir: str | Path | None = None)
         checkpoints=folder / "checkpoints.db",
         notify_channels=[FakeSlackChannel(world.slack)],
         personal_dir=folder / "memory",
+        recipes_dir=live_recipes(folder) if live else None,
+        model=DemoModel() if live else None,
     )
     return runtime, world
 

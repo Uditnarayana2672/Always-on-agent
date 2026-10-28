@@ -384,3 +384,15 @@ async def test_undo_only_for_report_actions(env: Env) -> None:
     audit_id = await env.rt.audit.append("send_mail", "ask", "h", "done", "agent", TASK)
     assert (await env.post(f"/api/activity/{audit_id}/undo")).status_code == 422
     assert (await env.post("/api/activity/999999/undo")).status_code == 404
+
+
+async def test_a_console_message_is_in_the_thread_at_once_and_only_once(env: Env) -> None:
+    await env.propose()
+    response = await env.post(f"/api/tasks/{TASK}/messages", {"text": "please draft a shorter version"})
+    assert response.status_code == 200 and response.json()["who"] == "you"
+    events = (await env.get(f"/api/tasks/{TASK}")).json()["events"]
+    mine = [e for e in events if e["text"] == "please draft a shorter version"]
+    assert len(mine) == 1 and mine[0]["name"] == "You"
+    await env.rt.drain()
+    events = (await env.get(f"/api/tasks/{TASK}")).json()["events"]
+    assert len([e for e in events if e["text"] == "please draft a shorter version"]) == 1

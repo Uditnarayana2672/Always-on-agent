@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.16 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
+- Next prompt: 1.17 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
 - Last updated: 2026-10-29
 
 ---
@@ -48,7 +48,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [!] | 1.13 Power BI adapter | A05 | 2026-10-29: `adapters/powerbi.py` + refresh poller; link formats, UTC-day cap, running, 403 hand-off tests green. Needs you: doctor groups + one history (blocked on Q3/Q9) |
 | [x] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | 2026-10-29: `config/recipes/*.yaml`, `recipes/steps/*`, `recipes/views.py`, `runtime/assembly.py`, `runtime/fake.py`; 25 recipe tests + fake-day test; `agentd run --fake --demo-only` posts brief, check-in and digest to the fake Slack DM |
 | [x] | 1.15 Console API | F15 | 2026-10-29: `api/{app,auth,models,service,stream,server}.py`, `runtime/settings.py`; 20 API tests; `agentd console` prints the one-time link; `agentd run --fake` serves the console on 127.0.0.1:8765 |
-| [ ] | 1.16 Console UI | F15 | |
+| [x] | 1.16 Console UI | F15 | 2026-10-29: `console/src` (shell, 10 pages, live stream); 23 Vitest page tests; Playwright: 12 pixel comparisons with the prototype (9 pages at 1440 px, 3 at 400 px; all within 0.1 %, tasks and connectors identical) and the smoke test approving a drafted reply on `agentd run --fake --live-recipes` |
 | [ ] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | |
 | [ ] | 1.18 End-to-end run and Phase 1 exit check | all | |
 
@@ -117,6 +117,7 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | Q11 | Laptop lock and sleep timers | Display off and sleep after 5 min on AC, 3 min on battery; screen locks after 15 min by policy (`InactivityTimeoutSecs`). Sleep after 5 min stops the agent when idle | 2026-10-28 |
 | Q12 | Does Teams keep the hidden `agent:<hash>` span on posted chat messages? | Unknown: `find_tagged` falls back to "same text from you in the chat's latest 50"; check with the first real post after Q3 | |
 | Q13 | Power BI shared-capacity cap: confirm the day is counted in UTC | Assumed UTC (counts reset 05:30 IST), per the service's refresh limits; `refresh_cap()` reports `resets_at`. Verify with the first real cap refusal | |
+| Q14 | A reply drafted by the model is triggered by fetched content, so even `save_draft` (Report) asks first: one reply needs two approvals (save, then send). Keep, or let a draft into your own Drafts folder stay Report? | Kept as is (golden rule 4) until you decide | 2026-10-29 |
 
 ## Blockers
 
@@ -293,6 +294,14 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | Console recipe saves merge into the YAML file (steps, data classes, context, comments kept), validate against RecipeSpec, refuse Hand off tools, and force new recipes to Shadow; a status change rewrites only the `status:` line. `title:` added to RecipeSpec for the console name | Prompt 1.16 editor; nothing the console sends can widen a recipe |
 | 2026-10-29 | "Test on a sample" runs the recipe harness on fixture data in a throwaway database | Never touches real systems |
 | 2026-10-29 | Marking a task done invalidates its open approvals at once | A closed task must not send anything later |
+| 2026-10-29 | Console: the prototype's CSS ported line for line (`console/src/styles.css`) with the same class names, instead of `@carbon/react` components; `@carbon/react` and `@carbon/styles` removed; IBM Plex comes from `@ibm/plex-sans` and `@ibm/plex-mono` (Carbon's own font packages), bundled so the console never calls a font CDN | Prompt 1.16 asks to match the prototype, which is hand-written Carbon-styled CSS; Carbon components render differently. Pixel tests hold the match |
+| 2026-10-29 | Pixel comparison renders the prototype in standards mode (a doctype is added) | The file has no doctype; opened directly, Chromium uses quirks mode (taller table rows). Hosted, it gets a skeleton like the console |
+| 2026-10-29 | Console dev/test dependencies: `@tanstack/react-query` (stack), `vitest`, `jsdom`, Testing Library, `@playwright/test` 1.63 (the preinstalled Chromium) | Stack table: TanStack Query, Vitest + RTL, Playwright |
+| 2026-10-29 | `agentd run --fake --live-recipes`: recipes run Live against the fakes, with a rule-based `DemoModel` (triage by request words, a short holding reply); default `--fake` stays Shadow | The console demo and the smoke test need real approval cards; nothing real is reachable in fake mode |
+| 2026-10-29 | After an approved message is sent (send_mail, post_chat, ServiceNow comment), the task moves to Waiting on others with "Sent; waiting for a reply."; the next message from them wakes it | It stayed In progress with nothing to do; matches the prototype |
+| 2026-10-29 | A console message is in the task's thread at once (same source ref as the worker's record, so never twice) | It used to appear only after a worker ran |
+| 2026-10-29 | The console words ledger and graph notes in plain language ("Moved to Waiting on others", "Would have done: flag the mail (Shadow: logged only).") | CLAUDE.md: no internal names in user-facing text |
+| 2026-10-29 | Console edge cases: signed-out screen with the `agentd console` hint; "Not reachable" status when agentd is down; stream reconnect refetches everything; stale approval (409) shows the server's reason and reloads; edits carry the hash the user saw; reset asks to pause first; locked and people-facing policy rows cannot be changed; project filter remembered per browser | Beyond the prototype, which has no server |
 
 ## Session log
 
@@ -311,3 +320,4 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | 1.8–1.9 | Done: memory and context builder, recipe engine; 558 tests, ruff and mypy clean; coverage memory 82–98 %, recipes 91–97 % | Run 1.10 (Outlook adapters); recipes R01–R06 in 1.14 use the harness |
 | 2026-10-29 | 1.10–1.13 | Code done: Graph mail + calendar, COM parity, Teams, Power BI, pollers, tool registrations, Slack bot + cards + router + commands, Teams self note, email to self; 631 tests pass (excluding `tests/recipes`, which needs the uncommitted `agent.memory`), ruff and mypy clean apart from that import. Real-account checks blocked on Q3/Q5 | Commit `agent/memory`; when IT and Slack say yes: `agentd signin`, `agentd doctor`, `agentd run --fake --real-slack` |
 | 2026-10-29 | 1.15 | Done: console API, auth, SSE, settings overrides; 745 tests, ruff and mypy clean | Run 1.16 (console UI) |
+| 2026-10-29 | 1.16 | Done: console UI pixel-matched to the prototype; 747 backend tests, 23 console tests, 13 Playwright tests (12 pixel, 1 smoke); ruff, mypy, tsc clean | Run 1.17; decide Q14 |
