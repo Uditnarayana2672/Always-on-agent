@@ -189,6 +189,15 @@ class EventRepo(_Repo):
     async def get(self, event_id: int) -> dict[str, Any] | None:
         return await self._one(select(s.events).where(s.events.c.id == event_id))
 
+    async def by_source_since(self, source: str, since: datetime, limit: int = 1000) -> list[dict[str, Any]]:
+        """Events of one source received at or after `since`, oldest first."""
+        return await self._all(
+            select(s.events)
+            .where(s.events.c.source == source, s.events.c.received_at >= since)
+            .order_by(s.events.c.received_at, s.events.c.id)
+            .limit(limit)
+        )
+
     async def by_status(self, status: str, limit: int = 500) -> list[dict[str, Any]]:
         return await self._all(
             select(s.events).where(s.events.c.status == status).order_by(s.events.c.id).limit(limit)
@@ -560,6 +569,12 @@ class AuditRepo(_Repo):
 
     async def recent(self, limit: int = 100) -> list[dict[str, Any]]:
         return await self._all(select(s.audit_log).order_by(s.audit_log.c.id.desc()).limit(limit))
+
+    async def since(self, at: datetime, limit: int = 2000) -> list[dict[str, Any]]:
+        """Rows at or after `at`, oldest first (digests, the activity page)."""
+        return await self._all(
+            select(s.audit_log).where(s.audit_log.c.at >= at).order_by(s.audit_log.c.id).limit(limit)
+        )
 
 
 class UndoRepo(_Repo):

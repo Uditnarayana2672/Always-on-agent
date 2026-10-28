@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from agent.adapters.base import ChatMessage, SlackEvent, ToolSpec, TranscriptResult
+from agent.adapters.base import ChatMessage, HealthStatus, SlackEvent, ToolSpec, TranscriptResult
 from agent.adapters.fakes._base import FIXTURES_DIR, FakeAdapter, parse_time
 from agent.core.clock import Clock
 from agent.core.errors import AdapterError
@@ -156,3 +156,21 @@ class FakeSlack(FakeAdapter):
         self._record("post_thread", thread_ts=thread_ts, text=text)
         self.thread_posts.append({"thread_ts": thread_ts, "text": text})
         return f"{self.clock.now_utc().timestamp():.6f}"
+
+
+class FakeSlackChannel:
+    """FakeSlack as a notification channel (the router's sink in tests and agentd run --fake)."""
+
+    name = "slack"
+
+    def __init__(self, slack: FakeSlack) -> None:
+        self.slack = slack
+
+    async def health(self) -> HealthStatus:
+        return await self.slack.health()
+
+    async def send(self, text: str) -> None:
+        await self.slack.send_dm(text)
+
+    async def send_card(self, text: str, blocks: list[dict[str, Any]]) -> None:
+        await self.slack.send_dm(text, blocks)

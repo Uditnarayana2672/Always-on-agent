@@ -539,3 +539,22 @@ async def test_harness_errors(folder: Path) -> None:
         await run_recipe_on_fixture(
             "ghost", None, recipes_dir=folder, registry=t.build(), step_prefixes=STEPS
         )
+
+
+def test_closed_schemas_carry_no_text() -> None:
+    from typing import Literal
+
+    from pydantic import BaseModel
+
+    from agent.recipes.runner import closed_schema
+
+    class Label(BaseModel):
+        label: Literal["a", "b"]
+        confidence: float
+        urgent: bool
+
+    class Words(BaseModel):
+        label: Literal["a", "b"]
+        reason: str
+
+    assert closed_schema(Label) and not closed_schema(Words)

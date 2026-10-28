@@ -115,3 +115,15 @@ class FrozenClock(_BaseClock):
 
     def now_utc(self) -> datetime:
         return self._now
+
+
+class ShiftedClock(_BaseClock):
+    """Real time, moved to start at a given instant (agentd run --fake: the fixtures' Wednesday)."""
+
+    def __init__(self, config: Config, start: datetime) -> None:
+        super().__init__(config)
+        _require_aware(start)
+        self._offset = start.astimezone(UTC) - datetime.now(UTC)
+
+    def now_utc(self) -> datetime:
+        return datetime.now(UTC) + self._offset

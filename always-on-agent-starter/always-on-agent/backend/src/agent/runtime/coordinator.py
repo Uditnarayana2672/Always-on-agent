@@ -355,6 +355,24 @@ class Coordinator:
                 )
                 return IngestResult(event_id=event_id, job_ids=[job_id], resolved_by="none")
             await self._events.route(event_id, None, status="digest")
+            recipes = (
+                self._match_recipes(event) if self._match_recipes is not None and event.actionable else []
+            )
+            if recipes:
+                # Inbox triage, refresh watch: recipes that act on events outside any task run task-less.
+                job_id = await self._jobs.enqueue(
+                    "schedule",
+                    payload={
+                        "schedule": "event",
+                        "event_id": event_id,
+                        "source": event.source,
+                        "kind": event.kind,
+                        "external_id": event.external_id,
+                        "recipes": recipes,  # the event text stays in events (retention purges it there)
+                    },
+                    priority=priority_for("powerbi" if event.source == "powerbi" else "digest"),
+                )
+                return IngestResult(event_id=event_id, status="digest", job_ids=[job_id])
             return IngestResult(event_id=event_id, status="digest")
 
         await self._invalidate(event, task_ids)
@@ -515,7 +533,12 @@ class Coordinator:
         task = await self._tasks.get(task_id)
         hours = await self._clock_hours(task) if task else None
         kind: JobKind = "schedule" if event.source == "schedule" else "new_event"
-        payload: dict[str, Any] = {"event_id": event.id, "source": event.source, "kind": event.kind}
+        payload: dict[str, Any] = {
+            "event_id": event.id,
+            "source": event.source,
+            "kind": event.kind,
+            "external_id": event.external_id,  # the message id steps look up (never its text)
+        }
         recipes = self._match_recipes(event) if self._match_recipes is not None else []
         if task is not None and task.recipe and task.recipe not in recipes and event.source != "schedule":
             recipes = [task.recipe, *recipes]

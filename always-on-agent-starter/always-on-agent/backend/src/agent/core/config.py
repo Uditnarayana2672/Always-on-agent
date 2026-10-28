@@ -186,6 +186,14 @@ class MailConfig(_Model):
     resync_days: int = Field(default=7, gt=0, le=30)  # full resync window after an expired delta token
     # Sensitivity labels that still allow reading the body; any other label means metadata only.
     open_labels: list[str] = Field(default_factory=lambda: ["Public", "General"])
+    # Inbox triage (R02) sender rules; addresses or @domain suffixes, case-insensitive.
+    manager: list[str] = Field(default_factory=list)  # always stays in Inbox, flagged
+    newsletter_senders: list[str] = Field(default_factory=list)
+    notification_senders: list[str] = Field(
+        default_factory=lambda: ["noreply@", "no-reply@", "donotreply@", "powerbi@", "notifications@"]
+    )
+    folder_notifications: str = "Notifications"
+    folder_newsletters: str = "Newsletters"
 
 
 class TeamsConfig(_Model):

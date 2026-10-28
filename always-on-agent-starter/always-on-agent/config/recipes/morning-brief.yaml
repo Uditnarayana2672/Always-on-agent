@@ -1,0 +1,12 @@
+# R01 Morning brief (architecture section 8). Ships in shadow: publishing to you is Silent, so the
+# brief still arrives; nothing above Silent runs until the recipe is set live.
+name: morning-brief
+project: general
+status: shadow
+trigger: {schedule: brief}
+model: haiku
+data_classes: [metadata, text]
+tools: [read_brief_data, publish_brief]
+steps: agent.recipes.steps.morning_brief:steps
+context: []
+output: dm

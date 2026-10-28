@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.14 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
+- Next prompt: 1.15 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
 - Last updated: 2026-10-29
 
 ---
@@ -46,7 +46,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [!] | 1.11 Slack channel | A04, F14 | 2026-10-29: `channels/slack_bot.py`, `cards.py`, `router.py`, `commands.py`, `email_self.py`; snapshot, compare-and-set, batching and fallback tests green. Needs you: `agentd run --fake --real-slack` (blocked on Q5) |
 | [!] | 1.12 Teams adapter and notifications | A03, F14 | 2026-10-29: `adapters/teams.py`, `channels/teams_notify.py`; respx + contract tests green. Needs you: doctor Teams read (blocked on Q3) |
 | [!] | 1.13 Power BI adapter | A05 | 2026-10-29: `adapters/powerbi.py` + refresh poller; link formats, UTC-day cap, running, 403 hand-off tests green. Needs you: doctor groups + one history (blocked on Q3/Q9) |
-| [ ] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | |
+| [x] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | 2026-10-29: `config/recipes/*.yaml`, `recipes/steps/*`, `recipes/views.py`, `runtime/assembly.py`, `runtime/fake.py`; 25 recipe tests + fake-day test; `agentd run --fake --demo-only` posts brief, check-in and digest to the fake Slack DM |
 | [ ] | 1.15 Console API | F15 | |
 | [ ] | 1.16 Console UI | F15 | |
 | [ ] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | |
@@ -273,6 +273,19 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | Notifications to the user (DMs, self chat, email to self) are channel sends, not tools: their recipient is fixed by config | They reach only the user; approvals still gate everything that reaches others |
 | 2026-10-29 | `agentd run --fake --real-slack` posts one test approval in the real DM against a temporary database and the fake Teams chat | Prompt 1.11 check without sending anything real |
 | 2026-10-29 | `test_pool_state_shows_current_work` waits for the step, not just the task | It raced on main too (the worker shows the task before the handler names its step) |
+| 2026-10-29 | Scheduled recipes read through Silent view tools (`read_brief_data`, `read_digest_data`, `read_mentions`, `read_refresh_facts`, `read_mail_rules`, `read_reply_context`, `find_known_fix`) and publish through Silent `publish_brief`, `publish_digest`, `notify_me` | Steps have no database; reads stay gated and audited; publishing reaches only the user (R01 "S") |
+| 2026-10-29 | Intake events that match poll/event recipes but belong to no task queue a task-less job (schedule "event") with only the event id; the runner loads the event | Inbox triage and refresh watch act on mail and refreshes outside any task; mail text never sits in the job queue |
+| 2026-10-29 | R02 needs-reply opens an RPL-#### reply task (`open_reply_task`, Report) linked to the conversation, with the mail's people as participants; R03 runs on it | Sending needs an approval, which needs a task; participants keep the gate's stranger rule meaningful |
+| 2026-10-29 | A model answer whose schema is closed (Literal, bool, int, float fields only) does not flag later proposals as triggered by fetched content | No words from the mail reach any argument; R02's moves and flags stay Report as architecture R02 says. Free-text answers still force Ask |
+| 2026-10-29 | Proposals carry `facts` from step code (owned dataset, error code, retries today) into the gate context; task-less Ask checks use the tool's mode_fn | R05's single retry is Report only when code-read facts say so |
+| 2026-10-29 | StepContext gained `outcomes` (with results), `memo` between turns, `last_tier`; `Outbox.result_of` | R03 saves the draft, then proposes the send with its id; Haiku drafts are marked |
+| 2026-10-29 | `SendMail.drafted_on`; the approval card notes "Drafted on Haiku" | Prompt 1.14 R03 |
+| 2026-10-29 | Brief: code ranks (connections, clocks past a mark, needs you, stalled, replies owed, Power BI, meetings); the model may only reword lines keeping ids and numbers and the line count; missed previous work day said at the top (weekends skipped) | E07/E09; nothing invented |
+| 2026-10-29 | Triage rules: manager (flag, never moved), auto-replies/bounces, invitations (categorise only), newsletters, notification senders, protected (untouched); categories are added to the user's, never replaced; mail already filed or sent by the user is skipped; task mail gets rules only | Edge cases beyond architecture R02 |
+| 2026-10-29 | Refresh retries count every attempt today, failed ones included | "One retry" means one try |
+| 2026-10-29 | `RecordedModel` with no answer left raises `ModelUnavailable` | Steps take their code-only path, as in an outage |
+| 2026-10-29 | `mail.manager`, `newsletter_senders`, `notification_senders`, `folder_*` config | R02 sender rules |
+| 2026-10-29 | `runtime/assembly.Runtime` wires every part once (F01 order); `agentd run --fake` builds it on FakeWorld with a clock starting at the fixtures' Wednesday | One wiring for the real run, the fake run, the API and tests |
 
 ## Session log
 

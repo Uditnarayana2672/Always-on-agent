@@ -58,6 +58,9 @@ class Proposal(BaseModel):
     draft: OutboundDraft | None = None  # set for outgoing messages: checked before the card
     recipe: str | None = None  # the recipe that proposed it (shadow mode and audit are per recipe)
     recipe_stage: Literal["live", "shadow"] | None = None
+    # Facts the step's code looked up for the tool's mode_fn (owned dataset, last error code ...).
+    # Set by our own step code from reads, never from fetched text.
+    facts: dict[str, Any] = Field(default_factory=dict)
 
 
 class StepResult(BaseModel):
@@ -143,6 +146,7 @@ class TaskGateContext:
             paused=await self._controls.paused() if self._controls else False,
             participants=participants,
             me=self._me[0] if self._me else None,
+            facts=dict(proposal.facts),
         )
 
 

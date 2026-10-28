@@ -164,6 +164,13 @@ class Outbox:
             result=_stored_result(existing),
         )
 
+    async def result_of(self, action_id: str) -> tuple[str, Any]:
+        """(status, stored result) of an action; recipe steps see what their earlier proposals did."""
+        action = await self._actions.get(action_id)
+        if action is None:
+            return "missing", None
+        return action.status, _stored_result(action)
+
     # ------------------------------------------------------------ execute
 
     async def execute(self, action_id: str, ctx: GateContext, register_inverse: bool = True) -> OutboxResult:

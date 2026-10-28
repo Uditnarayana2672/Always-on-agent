@@ -28,13 +28,14 @@ import inspect
 import json
 import logging
 from collections.abc import Callable, Mapping
-from typing import Any
+from typing import Any, Literal, get_args, get_origin
 
 from pydantic import BaseModel, Field
 
+from agent.adapters.base import Mode
 from agent.core.clock import Clock
 from agent.core.errors import DataRuleViolation, PolicyViolation
-from agent.db.repositories import Job, RecipeStateRepo
+from agent.db.repositories import EventRepo, Job, RecipeStateRepo
 from agent.graphs.task_graph import GraphState, Proposal, StepResult
 from agent.memory.context_builder import ContextBuilder, MemoryPacket
 from agent.memory.task_memory import TaskCard, TaskMemory
@@ -50,6 +51,8 @@ from agent.recipes.schema import RecipeSpec
 from agent.runtime.outbox import Outbox
 
 log = logging.getLogger(__name__)
+
+EVENT_SCHEDULE = "event"  # schedule name of task-less jobs for intake events (see on_schedule)
 
 READ_PREFIXES = (
     "list_",
@@ -146,6 +149,20 @@ class ReadOnlyAdapters:
         raise PolicyViolation("adapters are read-only in recipe steps")
 
 
+def closed_schema(schema: type[BaseModel]) -> bool:
+    """True when every field is a Literal, bool, int or float: the answer cannot carry free text."""
+    for field in schema.model_fields.values():
+        annotation = field.annotation
+        if annotation in (bool, int, float):
+            continue
+        if get_origin(annotation) is Literal and all(
+            isinstance(v, (str, int, bool)) for v in get_args(annotation)
+        ):
+            continue
+        return False
+    return bool(schema.model_fields)
+
+
 class ModelProposal(BaseModel):
     tool: str
     args: dict[str, Any] = Field(default_factory=dict)
@@ -173,6 +190,7 @@ class StepContext:
         registry: Registry,
         reader: Callable[[str, dict[str, Any]], Any] | None,
         turn: int,
+        outcomes: list[dict[str, Any]] | None = None,
     ) -> None:
         self.recipe = recipe
         self.task = task
@@ -180,6 +198,11 @@ class StepContext:
         self.packet = packet
         self.adapters = adapters
         self.turn = turn
+        # What this run's earlier proposals came to: {tool, status, action_id, note, result}.
+        self.outcomes: list[dict[str, Any]] = list(outcomes or [])
+        self.memo: dict[str, Any] = {}  # the step's own notes between turns (kept in the checkpoint)
+        self.last_tier: str | None = None  # the model tier the last answer came from (after fallback)
+        self.last_downgraded = False
         self.proposals: list[Proposal] = []
         self.outputs: list[Any] = []
         self.notes: list[str] = []
@@ -224,8 +247,15 @@ class StepContext:
             recipe=self.recipe.name,
             instructions=text or None,
         )
-        if extra or (self.packet is not None and self.packet.fetched_content()):
-            self._fetched = True  # anything proposed from here on came after reading other people's text
+        if (extra or (self.packet is not None and self.packet.fetched_content())) and not closed_schema(
+            schema
+        ):
+            # Anything proposed from here on came after reading other people's text. A closed answer
+            # (only fixed labels, numbers, yes/no) carries no words from that text into any argument,
+            # so code that maps a label to an action keeps the action's own mode (R02 triage).
+            self._fetched = True
+        self.last_tier = result.tier
+        self.last_downgraded = result.downgraded
         self.outputs.append(result.output)
         return result.output
 
@@ -247,11 +277,11 @@ class StepContext:
         purpose: str = "action",
         draft: OutboundDraft | None = None,
         idempotency_key: str | None = None,
+        facts: dict[str, Any] | None = None,
     ) -> None:
         if tool not in self.recipe.tools:
             raise PolicyViolation(f"recipe {self.recipe.name} does not list {tool}")
-        tool_def = self._registry.get(tool)
-        mode = self._registry.policy.mode_of(tool) or (tool_def.mode if tool_def else "ask")
+        mode = self._mode(tool, args, facts or {})
         if self.task is None and RANK[mode] >= RANK["ask"]:
             raise PolicyViolation(
                 f"{tool} needs an approval, and recipe {self.recipe.name} runs without a task"
@@ -267,8 +297,28 @@ class StepContext:
                 triggered_by_fetched_content=self._fetched,
                 recipe=self.recipe.name,
                 recipe_stage=self.recipe.stage,
+                facts=dict(facts or {}),
             )
         )
+
+    def _mode(self, tool: str, args: dict[str, Any], facts: dict[str, Any]) -> Mode:
+        """The tool's mode for these args and facts (mode_fn included), before the gate's hard rules."""
+        tool_def = self._registry.get(tool)
+        if tool_def is None:
+            return self._registry.policy.mode_of(tool) or "ask"
+        try:
+            model = tool_def.args_model.model_validate(args)
+        except Exception:
+            return self._registry.policy.mode_of(tool) or tool_def.mode
+        mode, _ = self._registry.base_mode(tool_def, model, GateContext(facts=facts))
+        return mode
+
+    def outcome_of(self, tool: str) -> dict[str, Any] | None:
+        """The latest outcome of a tool this run proposed earlier (None if it has not run)."""
+        for item in reversed(self.outcomes):
+            if item.get("tool") == tool:
+                return dict(item)
+        return None
 
     def again(self) -> None:
         """Run this recipe once more after its proposals are handled."""
@@ -316,6 +366,7 @@ class RecipeRunner:
         gate: Gate | None = None,
         state: RecipeStateRepo | None = None,
         paused: Callable[[], Any] | None = None,
+        events: EventRepo | None = None,
     ) -> None:
         self._loader = loader
         self._registry = registry
@@ -328,6 +379,7 @@ class RecipeRunner:
         self._gate = gate
         self._state = state
         self._paused = paused
+        self._events = events
         self.last_context: StepContext | None = None  # the harness reads outputs and notes from here
 
     # ------------------------------------------------------------ inside the task graph
@@ -347,7 +399,9 @@ class RecipeRunner:
                 continue
             memo["pins"][name] = recipe.content_hash
             ctx = await self._context(recipe, task_id, state, memo["turn"])
+            ctx.memo = dict((memo.get("data") or {}).get(name) or {})
             await self._run(recipe, ctx)
+            memo.setdefault("data", {})[name] = ctx.memo
             if ctx.wants_again and memo["turn"] < 20:
                 memo["turn"] += 1
             else:
@@ -363,6 +417,15 @@ class RecipeRunner:
             task = await self._memory.card(task_id)
             names = [task.recipe] if task.recipe else []
         return [n for n in dict.fromkeys(names) if n]
+
+    async def _outcomes(self, state: GraphState) -> list[dict[str, Any]]:
+        out = []
+        for item in state.get("outcomes") or []:
+            entry = dict(item)
+            if self._outbox is not None and entry.get("action_id"):
+                entry["status"], entry["result"] = await self._outbox.result_of(str(entry["action_id"]))
+            out.append(entry)
+        return out
 
     async def _context(self, recipe: LoadedRecipe, task_id: str, state: GraphState, turn: int) -> StepContext:
         trigger_ref = (state.get("context") or {}).get("trigger_ref")
@@ -381,6 +444,7 @@ class RecipeRunner:
             self._registry,
             self._reader(task_id, recipe),
             turn,
+            await self._outcomes(state),
         )
 
     async def _run(self, recipe: LoadedRecipe, ctx: StepContext) -> None:
@@ -418,11 +482,35 @@ class RecipeRunner:
         return [r for r in self._loader.all() if r.spec.trigger.schedule == schedule]
 
     async def on_schedule(self, job: Job) -> None:
-        """TaskRunner schedule listener: run the recipes this schedule fires."""
-        schedule = str(json.loads(job.payload_json or "{}").get("schedule") or "")
+        """TaskRunner schedule listener: run the recipes this schedule fires.
+
+        An intake event that belongs to no task but matches poll/event recipes (inbox triage, refresh
+        watch) arrives here as schedule "event" with the recipe names and the event in the payload.
+        """
+        payload = json.loads(job.payload_json or "{}")
+        schedule = str(payload.get("schedule") or "")
+        if schedule == EVENT_SCHEDULE:
+            trigger = {k: payload.get(k) for k in ("event_id", "source", "kind", "external_id")}
+            row = (
+                await self._events.get(int(payload["event_id"]))
+                if self._events and payload.get("event_id")
+                else None
+            )
+            trigger["event"] = json.loads(row["payload_json"]) if row else {}
+            for name in payload.get("recipes") or []:
+                recipe = self._loader.get(str(name))
+                if recipe is None or recipe.spec.creates_task is not None:
+                    continue
+                try:
+                    await self.run_taskless(recipe, trigger)
+                except Exception:
+                    log.exception("event recipe failed", extra={"recipe": recipe.name})
+            return
+        keep = ("schedule", "due_at", "late", "missed_since", "manual")
+        trigger = {k: v for k, v in payload.items() if k in keep}
         for recipe in self.recipes_for_schedule(schedule):
             try:
-                await self.run_taskless(recipe, {"schedule": schedule})
+                await self.run_taskless(recipe, trigger)
             except Exception:
                 log.exception("scheduled recipe failed", extra={"recipe": recipe.name})
 
@@ -452,6 +540,7 @@ class RecipeRunner:
                 actor=recipe.name,
                 paused=paused,
                 triggered_by_fetched_content=proposal.triggered_by_fetched_content,
+                facts=dict(proposal.facts),
             )
             results.append(
                 await self._outbox.submit(

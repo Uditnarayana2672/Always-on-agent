@@ -1,0 +1,11 @@
+# R04 Mention digest: unanswered Teams mentions and one-to-one messages at each check-in.
+name: mention-digest
+project: general
+status: shadow
+trigger: {schedule: checkin}
+model: none
+data_classes: [metadata]
+tools: [read_mentions, notify_me]
+steps: agent.recipes.steps.mention_digest:steps
+context: []
+output: dm

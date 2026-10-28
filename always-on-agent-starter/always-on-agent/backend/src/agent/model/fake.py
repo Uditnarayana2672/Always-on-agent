@@ -11,6 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from agent.core.errors import ModelUnavailable
 from agent.model.gateway import DEFAULT_MAX_TOKENS, GatewayResult, Tier
 from agent.privacy.hook import DataClass, PrivacyHook
 
@@ -63,7 +64,8 @@ class RecordedModel:
         )
         queue = self._by_purpose[purpose] if self._by_purpose[purpose] else self._shared
         if not queue:
-            raise AssertionError(f"no recorded model response left for {purpose!r}")
+            # Like an outage: steps take their code-only path (E07), tests see the purpose it wanted.
+            raise ModelUnavailable(f"no recorded model response left for {purpose!r}")
         item = queue.popleft()
         if isinstance(item, Exception):
             raise item

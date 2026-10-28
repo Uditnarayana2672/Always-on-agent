@@ -8,6 +8,7 @@ from agent import __version__
 
 if TYPE_CHECKING:
     from agent.core.auth import GraphAuth
+    from agent.runtime.assembly import Runtime
 
 app = typer.Typer(help="Always-On Agent daemon.", no_args_is_help=True)
 secret_app = typer.Typer(help="Manage secrets in Windows Credential Manager.", no_args_is_help=True)
@@ -30,6 +31,8 @@ def run(
     real_slack: bool = typer.Option(
         False, "--real-slack", help="With --fake: send one test approval card to your real Slack DM."
     ),
+    data_dir: str | None = typer.Option(None, "--data-dir", help="With --fake: keep the fake database here."),
+    demo_only: bool = typer.Option(False, "--demo-only", help="With --fake: run the fake day, then exit."),
 ) -> None:
     """Run the agent."""
     from agent.core.config import get_config
@@ -47,15 +50,35 @@ def run(
         _slack_check()
         return
 
-    from agent.adapters.fakes.world import FakeWorld
+    asyncio.run(_run_fake(data_dir, demo_only))
 
-    # Fake mode builds only fakes: no Graph, Slack, Power BI or ICA client is created.
-    world = FakeWorld.frozen()
-    for status in asyncio.run(world.health()):
-        typer.echo(f"{status.connector:11} {status.status:8} {status.detail}")
-    typer.echo(
-        f"fake world ready at {world.clock.now_local():%Y-%m-%d %H:%M %Z}; runtime not implemented yet"
-    )
+
+async def _run_fake(data_dir: str | None, demo_only: bool) -> None:
+    """Fake mode builds only fakes: no Graph, Slack, Power BI or ICA client is created."""
+    from agent.core.config import get_config
+    from agent.runtime.fake import build_fake_runtime, run_demo
+
+    runtime, world = await build_fake_runtime(get_config(), data_dir)
+    try:
+        for status in await world.health():
+            typer.echo(f"{status.connector:11} {status.status:8} {status.detail}")
+        log = await run_demo(runtime, world)
+        typer.echo(f"\nfake day at {runtime.clock.now_local():%Y-%m-%d %H:%M %Z}; fake Slack DM:")
+        for message in log:
+            typer.echo("  " + str(message["text"]).replace("\n", "\n  "))
+        if not demo_only:
+            await _serve(runtime)
+    finally:
+        await runtime.stop()
+
+
+async def _serve(runtime: "Runtime") -> None:
+    """Keep the fake agent running (workers, no real schedules) until Ctrl+C."""
+    import asyncio
+
+    await runtime.start(scheduler=False)
+    typer.echo("fake agent running; Ctrl+C to stop")
+    await asyncio.Event().wait()
 
 
 def _slack_check() -> None:
