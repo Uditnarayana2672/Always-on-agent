@@ -128,7 +128,9 @@ def build() -> Registry:
         lookup="find_sent",
         recipients=lambda a: [*a.to, *a.cc, *a.bcc],  # type: ignore[attr-defined]
     )(SendMail)
-    reg.tool("post_chat", mode="ask", adapter="teams", method="post", lookup="find_tagged")(PostChat)
+    reg.tool(
+        "post_chat", mode="ask", adapter="teams", method="post", lookup="find_tagged", content_field="body"
+    )(PostChat)
     reg.tool(
         "trigger_refresh", mode="ask", adapter="powerbi", method="trigger_refresh", mode_fn=_refresh_mode
     )(TriggerRefresh)

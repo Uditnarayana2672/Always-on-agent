@@ -94,6 +94,10 @@ class TaskRepo(_Repo):
             )
         return result.rowcount == 1
 
+    async def ids_with_prefix(self, prefix: str) -> list[str]:
+        rows = await self._all(select(s.tasks.c.id).where(s.tasks.c.id.startswith(prefix, autoescape=True)))
+        return [r["id"] for r in rows]
+
     async def heartbeat(self, task_id: str) -> None:
         await self.update(task_id, last_heartbeat_at=self._now())
 
@@ -340,6 +344,20 @@ class ActionRequest(BaseModel):
     expires_at: datetime | None = None
     decided_at: datetime | None = None
     result_json: str | None = None
+    args_digest: str | None = None
+    content: str | None = None
+    edited: bool = False
+    decided_by: str | None = None
+    reason: str | None = None
+    surfaces_json: str = "{}"
+
+    @property
+    def digest_of_args(self) -> str:
+        return self.args_digest or self.content_hash
+
+    @property
+    def surfaces(self) -> dict[str, str]:
+        return dict(json.loads(self.surfaces_json or "{}"))
 
 
 class ActionRepo(_Repo):
@@ -356,6 +374,8 @@ class ActionRepo(_Repo):
         content_hash: str,
         idempotency_key: str,
         expires_at: datetime | None = None,
+        args_digest: str | None = None,
+        content: str | None = None,
     ) -> ActionRequest:
         values: dict[str, Any] = {
             "id": action_id,
@@ -368,6 +388,8 @@ class ActionRepo(_Repo):
             "idempotency_key": idempotency_key,
             "created_at": self._now(),
             "expires_at": expires_at,
+            "args_digest": args_digest or content_hash,
+            "content": content,
         }
         async with self._engine.begin() as conn:
             await conn.execute(insert(s.action_requests).values(**values))
@@ -413,6 +435,81 @@ class ActionRepo(_Repo):
             .order_by(s.action_requests.c.created_at)
         )
         return [ActionRequest(**r) for r in rows]
+
+    async def decide(
+        self,
+        action_id: str,
+        from_statuses: tuple[str, ...],
+        to_status: str,
+        expected_hash: str | None = None,
+        unexpired_at: datetime | None = None,
+        **values: Any,
+    ) -> bool:
+        """Compare-and-set from any of several statuses (approvals). False when nothing matched.
+
+        With unexpired_at, rows whose expires_at is at or before it do not match, so an approval
+        clicked after 24 h never lands.
+        """
+        cond = [s.action_requests.c.id == action_id, s.action_requests.c.status.in_(from_statuses)]
+        if expected_hash is not None:
+            cond.append(s.action_requests.c.content_hash == expected_hash)
+        if unexpired_at is not None:
+            cond.append(
+                or_(s.action_requests.c.expires_at.is_(None), s.action_requests.c.expires_at > unexpired_at)
+            )
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                update(s.action_requests).where(*cond).values(status=to_status, **values)
+            )
+        return result.rowcount == 1
+
+    async def open_for_task(self, task_id: str, statuses: tuple[str, ...]) -> list[ActionRequest]:
+        rows = await self._all(
+            select(s.action_requests)
+            .where(s.action_requests.c.task_id == task_id, s.action_requests.c.status.in_(statuses))
+            .order_by(s.action_requests.c.created_at)
+        )
+        return [ActionRequest(**r) for r in rows]
+
+    async def with_statuses(self, statuses: tuple[str, ...]) -> list[ActionRequest]:
+        rows = await self._all(
+            select(s.action_requests)
+            .where(s.action_requests.c.status.in_(statuses))
+            .order_by(s.action_requests.c.created_at)
+        )
+        return [ActionRequest(**r) for r in rows]
+
+    async def expired(self, statuses: tuple[str, ...], now: datetime) -> list[ActionRequest]:
+        rows = await self._all(
+            select(s.action_requests).where(
+                s.action_requests.c.status.in_(statuses),
+                s.action_requests.c.expires_at.is_not(None),
+                s.action_requests.c.expires_at <= now,
+            )
+        )
+        return [ActionRequest(**r) for r in rows]
+
+    async def set_surface(self, action_id: str, channel: str, ref: str) -> None:
+        async with self._engine.begin() as conn:
+            current = (
+                await conn.execute(
+                    select(s.action_requests.c.surfaces_json).where(s.action_requests.c.id == action_id)
+                )
+            ).scalar()
+            surfaces = json.loads(current or "{}") | {channel: ref}
+            await conn.execute(
+                update(s.action_requests)
+                .where(s.action_requests.c.id == action_id)
+                .values(surfaces_json=json.dumps(surfaces, sort_keys=True))
+            )
+
+    async def detach_tasks(self) -> int:
+        """Reset: keep every action row (the audit log points at them) but forget its task."""
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                update(s.action_requests).where(s.action_requests.c.task_id.is_not(None)).values(task_id=None)
+            )
+        return result.rowcount
 
 
 # ---------------------------------------------------------------- audit and undo
@@ -497,8 +594,20 @@ class MemoryRepo(_Repo):
     async def get_summary(self, task_id: str) -> dict[str, Any] | None:
         return await self._one(select(s.task_summaries).where(s.task_summaries.c.task_id == task_id))
 
-    async def put_summary(self, task_id: str, text: str, expected_version: int | None = None) -> int:
-        """Write a new summary version. With expected_version, fails if someone else wrote first."""
+    async def put_summary(
+        self,
+        task_id: str,
+        text: str,
+        expected_version: int | None = None,
+        covers_through: int | None = None,
+        verified: bool = False,
+    ) -> int:
+        """Write a new summary version.
+
+        With expected_version (0 = no summary yet), fails if someone else wrote first.
+
+        covers_through is the last task event the summary includes; verified says the code check passed.
+        """
         now = self._now()
         async with self._engine.begin() as conn:
             current = (
@@ -506,22 +615,23 @@ class MemoryRepo(_Repo):
                     select(s.task_summaries.c.version).where(s.task_summaries.c.task_id == task_id)
                 )
             ).scalar()
-            if expected_version is not None and current != expected_version:
+            if expected_version is not None and (current or 0) != expected_version:
                 raise ApprovalConflict(
                     f"summary for {task_id} is at version {current}, not {expected_version}"
                 )
             version = (current or 0) + 1
+            values = {
+                "version": version,
+                "text": text,
+                "updated_at": now,
+                "covers_through": covers_through,
+                "verified": verified,
+            }
             if current is None:
-                await conn.execute(
-                    insert(s.task_summaries).values(
-                        task_id=task_id, version=version, text=text, updated_at=now
-                    )
-                )
+                await conn.execute(insert(s.task_summaries).values(task_id=task_id, **values))
             else:
                 await conn.execute(
-                    update(s.task_summaries)
-                    .where(s.task_summaries.c.task_id == task_id)
-                    .values(version=version, text=text, updated_at=now)
+                    update(s.task_summaries).where(s.task_summaries.c.task_id == task_id).values(**values)
                 )
         return version
 
@@ -557,6 +667,11 @@ class MemoryRepo(_Repo):
         source_ref: str | None = None,
         raw_expires_at: datetime | None = None,
         at: datetime | None = None,
+        kind: str = "note",
+        headline: str | None = None,
+        lang: str | None = None,
+        text_translated: str | None = None,
+        importance: int = 0,
     ) -> int:
         async with self._engine.begin() as conn:
             res = await conn.execute(
@@ -568,11 +683,17 @@ class MemoryRepo(_Repo):
                     text_pseudonymised=text_pseudonymised,
                     source_ref=source_ref,
                     raw_expires_at=raw_expires_at,
+                    kind=kind,
+                    headline=headline,
+                    lang=lang,
+                    text_translated=text_translated,
+                    importance=importance,
                 )
             )
         return int(res.inserted_primary_key[0])  # type: ignore[index]
 
     async def task_events(self, task_id: str, limit: int = 50) -> list[dict[str, Any]]:
+        """The newest `limit` events, oldest first."""
         rows = await self._all(
             select(s.task_events)
             .where(s.task_events.c.task_id == task_id)
@@ -580,6 +701,44 @@ class MemoryRepo(_Repo):
             .limit(limit)
         )
         return list(reversed(rows))
+
+    async def task_event(self, task_id: str, event_id: int) -> dict[str, Any] | None:
+        return await self._one(
+            select(s.task_events).where(s.task_events.c.task_id == task_id, s.task_events.c.id == event_id)
+        )
+
+    async def task_events_after(
+        self, task_id: str, after_id: int | None, limit: int = 500
+    ) -> list[dict[str, Any]]:
+        """Events with id greater than after_id (all when None), oldest first."""
+        query = select(s.task_events).where(s.task_events.c.task_id == task_id)
+        if after_id is not None:
+            query = query.where(s.task_events.c.id > after_id)
+        return await self._all(query.order_by(s.task_events.c.id).limit(limit))
+
+    async def event_index(self, task_id: str) -> list[dict[str, Any]]:
+        """Light rows for every event (no text): what the older-events index and search start from."""
+        cols = s.task_events.c
+        return await self._all(
+            select(cols.id, cols.at, cols.actor, cols.channel, cols.kind, cols.headline, cols.importance)
+            .where(cols.task_id == task_id)
+            .order_by(cols.id)
+        )
+
+    async def has_source(self, task_id: str, source_ref: str) -> bool:
+        row = await self._one(
+            select(s.task_events.c.id).where(
+                s.task_events.c.task_id == task_id, s.task_events.c.source_ref == source_ref
+            )
+        )
+        return row is not None
+
+    async def delete_fact(self, task_id: str, key: str) -> bool:
+        async with self._engine.begin() as conn:
+            res = await conn.execute(
+                delete(s.task_facts).where(s.task_facts.c.task_id == task_id, s.task_facts.c.key == key)
+            )
+        return res.rowcount > 0
 
     async def link(self, task_id: str, kind: str, external_id: str) -> None:
         stmt = sqlite_insert(s.task_links).values(task_id=task_id, kind=kind, external_id=external_id)
@@ -631,53 +790,95 @@ class TokenCipher:
         return hmac.new(self._mac_key, f"{kind}\x00{value}".encode(), hashlib.sha256).hexdigest()
 
 
+GLOBAL_SCOPE = "_global"
+
+
 class TokenMapRepo(_Repo):
+    """Pseudonym tokens per task (F11). Several real values (full name, first name, email) may share a
+    token; the canonical one is what restore() writes back. Real values are Fernet-encrypted and found
+    by a keyed digest, so the table never holds plaintext."""
+
     def __init__(self, engine: AsyncEngine, clock: Clock, cipher: TokenCipher) -> None:
         super().__init__(engine, clock)
         self._cipher = cipher
 
-    async def put(self, token: str, kind: str, real_value: str, task_id: str | None = None) -> str:
-        """Store a mapping. If the value is already mapped, returns the existing token instead."""
-        digest = self._cipher.digest(kind, real_value)
-        existing = await self.token_for(kind, real_value)
+    @staticmethod
+    def _scope(task_id: str | None) -> str:
+        return task_id or GLOBAL_SCOPE
+
+    async def put(
+        self,
+        token: str,
+        kind: str,
+        real_value: str,
+        task_id: str | None = None,
+        canonical: bool = True,
+        key: str | None = None,
+    ) -> str:
+        """Store a mapping. If the value is already mapped in this scope, returns the existing token.
+
+        key is what lookups match on (a folded name, so Tomás and Tomas share a token); it defaults to
+        the real value, which is what gets stored (encrypted) and restored.
+        """
+        match_key = real_value if key is None else key
+        existing = await self.token_for(kind, match_key, task_id)
         if existing:
             return existing
         try:
             async with self._engine.begin() as conn:
                 await conn.execute(
                     insert(s.token_map).values(
+                        scope=self._scope(task_id),
                         task_id=task_id,
                         token=token,
                         kind=kind,
                         real_value_encrypted=self._cipher.encrypt(real_value),
-                        value_digest=digest,
+                        value_digest=self._cipher.digest(kind, match_key),
+                        canonical=canonical,
                     )
                 )
         except IntegrityError:
-            raced = await self.token_for(kind, real_value)
+            raced = await self.token_for(kind, match_key, task_id)
             if raced is None:
                 raise
             return raced
         return token
 
-    async def token_for(self, kind: str, real_value: str) -> str | None:
+    async def token_for(self, kind: str, key: str, task_id: str | None = None) -> str | None:
         row = await self._one(
             select(s.token_map.c.token).where(
+                s.token_map.c.scope == self._scope(task_id),
                 s.token_map.c.kind == kind,
-                s.token_map.c.value_digest == self._cipher.digest(kind, real_value),
+                s.token_map.c.value_digest == self._cipher.digest(kind, key),
             )
         )
         return row["token"] if row else None
 
-    async def real_value(self, token: str) -> str | None:
-        row = await self._one(select(s.token_map.c.real_value_encrypted).where(s.token_map.c.token == token))
+    async def real_value(self, token: str, task_id: str | None = None) -> str | None:
+        """The canonical real value behind a token (or any value when none is canonical)."""
+        row = await self._one(
+            select(s.token_map.c.real_value_encrypted)
+            .where(s.token_map.c.scope == self._scope(task_id), s.token_map.c.token == token)
+            .order_by(s.token_map.c.canonical.desc())
+            .limit(1)
+        )
         return self._cipher.decrypt(row["real_value_encrypted"]) if row else None
 
-    async def count(self, kind: str) -> int:
+    async def mapping(self, task_id: str | None = None) -> dict[str, str]:
+        """token -> canonical real value for a scope."""
+        rows = await self._all(
+            select(s.token_map.c.token, s.token_map.c.real_value_encrypted)
+            .where(s.token_map.c.scope == self._scope(task_id))
+            .order_by(s.token_map.c.canonical)  # canonical rows last, so they win
+        )
+        return {r["token"]: self._cipher.decrypt(r["real_value_encrypted"]) for r in rows}
+
+    async def count(self, kind: str, task_id: str | None = None) -> int:
         async with self._engine.connect() as conn:
-            return int(
-                (await conn.execute(select(func.count()).where(s.token_map.c.kind == kind))).scalar_one()
+            query = select(func.count()).where(
+                s.token_map.c.kind == kind, s.token_map.c.scope == self._scope(task_id)
             )
+            return int((await conn.execute(query)).scalar_one())
 
 
 # ---------------------------------------------------------------- directory, lessons, usage, health, kv
@@ -697,6 +898,9 @@ class DirectoryRepo(_Repo):
 
     async def by_site(self, site: str) -> list[dict[str, Any]]:
         return await self._all(select(s.directory).where(s.directory.c.site == site))
+
+    async def all(self) -> list[dict[str, Any]]:
+        return await self._all(select(s.directory).order_by(s.directory.c.email))
 
 
 class LessonRepo(_Repo):
@@ -795,3 +999,193 @@ class KvRepo(_Repo):
     async def delete(self, key: str) -> None:
         async with self._engine.begin() as conn:
             await conn.execute(delete(s.kv).where(s.kv.c.key == key))
+
+
+PAUSED_DETAIL = "paused"
+
+
+class ScheduleRunRepo(_Repo):
+    """One row per (schedule, due time): the dedupe between live fires and catch-up (F02)."""
+
+    async def claim(
+        self,
+        schedule: str,
+        due_at: datetime,
+        status: str,
+        detail: str | None = None,
+        over_paused: bool = False,
+    ) -> bool:
+        """Record a run slot. False if the slot was already recorded (it ran, was skipped or caught up).
+
+        over_paused lets a catch-up take a slot that was only skipped because the agent was paused.
+        """
+        ran_at = self._now() if status in ("ran", "caught_up") else None
+        stmt = sqlite_insert(s.schedule_runs).values(
+            schedule=schedule, due_at=due_at, ran_at=ran_at, status=status, detail=detail
+        )
+        if over_paused:
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["schedule", "due_at"],
+                set_={"status": status, "detail": detail, "ran_at": ran_at},
+                where=and_(s.schedule_runs.c.status == "skipped", s.schedule_runs.c.detail == PAUSED_DETAIL),
+            )
+        else:
+            stmt = stmt.on_conflict_do_nothing()
+        async with self._engine.begin() as conn:
+            result = await conn.execute(stmt)
+        return result.rowcount == 1
+
+    async def recorded_since(self, schedule: str, since: datetime) -> dict[datetime, dict[str, Any]]:
+        rows = await self._all(
+            select(s.schedule_runs).where(
+                s.schedule_runs.c.schedule == schedule, s.schedule_runs.c.due_at > since
+            )
+        )
+        return {r["due_at"]: r for r in rows}
+
+    async def runs(self, schedule: str | None = None) -> list[dict[str, Any]]:
+        query = select(s.schedule_runs).order_by(s.schedule_runs.c.due_at, s.schedule_runs.c.id)
+        if schedule is not None:
+            query = query.where(s.schedule_runs.c.schedule == schedule)
+        return await self._all(query)
+
+
+# ---------------------------------------------------------------- context log, recipes, retention
+
+
+class ContextLogRepo(_Repo):
+    """One row per built context packet: what went in, what was trimmed or left out (F10)."""
+
+    async def add(
+        self, task_id: str | None, recipe: str | None, tokens: int, manifest: dict[str, Any]
+    ) -> int:
+        async with self._engine.begin() as conn:
+            res = await conn.execute(
+                insert(s.context_log).values(
+                    at=self._now(),
+                    task_id=task_id,
+                    recipe=recipe,
+                    tokens=tokens,
+                    manifest_json=json.dumps(manifest, default=str),
+                )
+            )
+        return int(res.inserted_primary_key[0])  # type: ignore[index]
+
+    async def for_task(self, task_id: str, limit: int = 20) -> list[dict[str, Any]]:
+        return await self._all(
+            select(s.context_log)
+            .where(s.context_log.c.task_id == task_id)
+            .order_by(s.context_log.c.id.desc())
+            .limit(limit)
+        )
+
+    async def purge_before(self, cutoff: datetime) -> int:
+        async with self._engine.begin() as conn:
+            res = await conn.execute(delete(s.context_log).where(s.context_log.c.at < cutoff))
+        return res.rowcount
+
+
+class RecipeStateRepo(_Repo):
+    """recipes_state: stage (live | shadow | off), load error and counters per recipe (F12)."""
+
+    async def record_load(
+        self, recipe: str, version: int, stage: str, content_hash: str | None, error: str | None = None
+    ) -> None:
+        values = {
+            "version": version,
+            "stage": stage,
+            "enabled": error is None and stage != "off",
+            "error": error,
+            "content_hash": content_hash,
+            "loaded_at": self._now(),
+        }
+        stmt = sqlite_insert(s.recipes_state).values(recipe=recipe, **values)
+        async with self._engine.begin() as conn:
+            await conn.execute(stmt.on_conflict_do_update(index_elements=["recipe"], set_=values))
+
+    async def get(self, recipe: str) -> dict[str, Any] | None:
+        return await self._one(select(s.recipes_state).where(s.recipes_state.c.recipe == recipe))
+
+    async def all(self) -> list[dict[str, Any]]:
+        return await self._all(select(s.recipes_state).order_by(s.recipes_state.c.recipe))
+
+    async def bump(self, recipe: str, counter: str, by: int = 1) -> None:
+        """Add to a counter in stats_json (runs, would_do, proposals ...) and stamp last_run_at."""
+        async with self._engine.begin() as conn:
+            current = (
+                await conn.execute(
+                    select(s.recipes_state.c.stats_json).where(s.recipes_state.c.recipe == recipe)
+                )
+            ).scalar()
+            if current is None:
+                return
+            stats = json.loads(current or "{}")
+            stats[counter] = int(stats.get(counter, 0)) + by
+            await conn.execute(
+                update(s.recipes_state)
+                .where(s.recipes_state.c.recipe == recipe)
+                .values(stats_json=json.dumps(stats, sort_keys=True), last_run_at=self._now())
+            )
+
+
+# Payload keys that hold free text (mail bodies, chat text). Everything else is metadata and stays.
+RAW_PAYLOAD_KEYS = ("body", "text", "subject", "raw_subject", "chat_topic", "value")
+
+
+class RetentionRepo(_Repo):
+    """Deletes raw text that has outlived its retention (F09). Pseudonymised memory is not touched."""
+
+    async def purge_event_payloads(self, cutoff: datetime) -> int:
+        """Strip free text from intake payloads received before cutoff; keep ids, senders, times."""
+        rows = await self._all(
+            select(s.events.c.id, s.events.c.payload_json).where(s.events.c.received_at < cutoff)
+        )
+        purged = 0
+        async with self._engine.begin() as conn:
+            for row in rows:
+                payload = json.loads(row["payload_json"] or "{}")
+                if payload.get("_purged"):
+                    continue
+                stripped = {k: v for k, v in payload.items() if k not in RAW_PAYLOAD_KEYS}
+                stripped["_purged"] = True
+                await conn.execute(
+                    update(s.events)
+                    .where(s.events.c.id == row["id"])
+                    .values(payload_json=json.dumps(stripped, default=str))
+                )
+                purged += 1
+        return purged
+
+    async def expire_task_event_raw(self, now: datetime) -> list[str]:
+        """Task events whose raw source has expired: clear raw_expires_at and return their source refs,
+        so the caller can purge the raw payloads they point to."""
+        rows = await self._all(
+            select(s.task_events.c.id, s.task_events.c.source_ref).where(
+                s.task_events.c.raw_expires_at.is_not(None), s.task_events.c.raw_expires_at <= now
+            )
+        )
+        if not rows:
+            return []
+        async with self._engine.begin() as conn:
+            await conn.execute(
+                update(s.task_events)
+                .where(s.task_events.c.id.in_([r["id"] for r in rows]))
+                .values(raw_expires_at=None)
+            )
+        return [r["source_ref"] for r in rows if r["source_ref"]]
+
+    async def purge_event_payload(self, event_id: int) -> bool:
+        row = await self._one(select(s.events.c.payload_json).where(s.events.c.id == event_id))
+        if row is None:
+            return False
+        payload = json.loads(row["payload_json"] or "{}")
+        if payload.get("_purged"):
+            return False
+        stripped = {k: v for k, v in payload.items() if k not in RAW_PAYLOAD_KEYS} | {"_purged": True}
+        async with self._engine.begin() as conn:
+            await conn.execute(
+                update(s.events)
+                .where(s.events.c.id == event_id)
+                .values(payload_json=json.dumps(stripped, default=str))
+            )
+        return True

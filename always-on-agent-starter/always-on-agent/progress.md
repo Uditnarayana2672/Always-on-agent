@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.5
+- Next prompt: 1.10
 - Last updated: 2026-10-29
 
 ---
@@ -37,11 +37,11 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [x] | 1.2 Task ledger and state machine | F08 | 2026-10-29: `ledger/` states, clocks, heartbeats, links; migration 0002; 72 tests |
 | [x] | 1.3 Tool registry, policy gate, outbox, audit, undo | F06, F13 | 2026-10-29: 45 gate cases; crash-recovery and undo tests; `agent.policy` coverage 99 % |
 | [x] | 1.4 Job queue and worker pool | F04 | 2026-10-29: `runtime/workers.py`; retry, poison, drain, TTL recovery, pool state; 10 tests |
-| [ ] | 1.5 LangGraph task graph and approvals | F07 | |
-| [ ] | 1.6 Scheduler, catch-up, quiet hours, controls | F02, F16 | |
-| [ ] | 1.7 Privacy layer | F11 | |
-| [ ] | 1.8 Memory and context builder | F09, F10 | |
-| [ ] | 1.9 Recipe engine | F12 | |
+| [x] | 1.5 LangGraph task graph and approvals | F07 | 2026-10-29: `graphs/`, `approvals/`, `channels/base.py`; interrupt/resume, CAS approvals, invalidation, held-on-pause; 34 tests |
+| [x] | 1.6 Scheduler, catch-up, quiet hours, controls | F02, F16 | 2026-10-29: `runtime/scheduler.py`, `runtime/controls.py`, `channels/notifier.py`; persisted APScheduler jobs, coalesced catch-up; 22 tests |
+| [x] | 1.7 Privacy layer | F11 | 2026-10-29: pseudonymiser, leak check, restore, data-rule reducer, outbound checks; gateway uses `PrivacyLayer`; 46 tests incl. hypothesis |
+| [x] | 1.8 Memory and context builder | F09, F10 | 2026-10-29: `memory/` four tiers, budgeted packet with pointers and manifests, checked summary, ranked precedents, retention; migration 0004; 36 tests |
+| [x] | 1.9 Recipe engine | F12 | 2026-10-29: `recipes/` schema, safe loader with hot reload and pinned versions, read-only StepContext, shadow would-do, triggers, harness; 29 tests |
 | [ ] | 1.10 Outlook mail and calendar adapters | A01, A02 | |
 | [ ] | 1.11 Slack channel | A04, F14 | |
 | [ ] | 1.12 Teams adapter and notifications | A03, F14 | |
@@ -189,6 +189,59 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | Fakes gained `find_sent`, `get_folder`, `discard_draft` (Outlook) and `find_tagged` (Teams) | Real adapters must add the same in 1.10 and 1.12 |
 | 2026-10-29 | Retry: 2 attempts total (backoff 2 min); the 10 min step in `BACKOFF` is unused at `MAX_ATTEMPTS = 2` | Prompt says "fails twice then surfaces" |
 | 2026-10-29 | Jobs are finished only by the worker still holding them (`locked_by` check) | A late worker after TTL takeover cannot overwrite |
+| 2026-10-29 | Migration 0003: `action_requests` gains `args_digest`, `content`, `edited`, `decided_by`, `reason`, `surfaces_json`; `schedule_runs.detail`; `token_map` rebuilt per task (PK scope+kind+digest, `canonical`) | Tokens were global, so two tasks could not both have a CALLER; one person has several values (name, email) per token |
+| 2026-10-29 | Approval hash = sha256(args digest + normalised shown content); the outbox re-checks the args digest only | Golden rule 2 binds what the user saw; `send_mail` content is not in its args |
+| 2026-10-29 | Edits only for tools that declare `content_field`; the edited text is normalised and written into the args | What is shown is exactly what is sent. `send_mail` (draft id) must be rejected and redrafted |
+| 2026-10-29 | Approved-but-not-yet-sending actions are invalidated by a new caller event too (4.3 lists only proposed) | E16: the caller may answer between Approve and the send; an executing one is past stopping |
+| 2026-10-29 | Failed, expired and invalidated Ask actions come back as `proposed` (fresh approval) when proposed again with the same key | 4.3 `failed -> proposed`; the old prior test asserted it stayed failed |
+| 2026-10-29 | Pause: actions become `held`; the graph waits on a `held` interrupt; `release_held()` on resume: approved-before-pause -> approved, never approved -> proposed (card shown again), own-space -> ready | F07 "approval during pause: stored, executed on resume"; previously the approval was lost in `held` |
+| 2026-10-29 | A task closed (done) while an approval is pending invalidates it; nothing goes out for a closed task | Golden rule 10 plus no stale sends |
+| 2026-10-29 | Each interrupt node routes back to itself instead of calling `interrupt()` twice; runner continues crashed runs with `ainvoke(None)` first | LangGraph re-runs a node from its start on resume and matches resume values by position |
+| 2026-10-29 | The user's own events never invalidate: Slack, console (`api`) and mail from `config.me` | F07 rule; added `me` to config |
+| 2026-10-29 | Schedule events with no task become task-less `schedule` jobs; the runner dispatches them by name (`checkin` -> notifier flush, `expire_approvals` -> `approvals.expire`) | Brief, check-ins and pollers need a job without a task |
+| 2026-10-29 | Check-ins at work start + every `checkin_every_minutes` before work end (09, 11, 13, 15, 17) | Prompt test needs one missed check-in between 18:00 and 10:30 |
+| 2026-10-29 | Chase window is a cron in `caller_timezone` | DST moves it between 13:30 and 12:30 IST automatically (E05) |
+| 2026-10-29 | Catch-up: missed brief/chase run only if the latest missed slot is today, else noted (`missed_since`) on the next one; check-ins and digests coalesce; pollers once; 7 days max; heartbeat in the future resets | F02 rules; "laptop asleep through the whole day" |
+| 2026-10-29 | Slots skipped while paused are taken over by the resume catch-up; holiday and leave skips are not | Pause should lose nothing; leave and holidays mean "don't" |
+| 2026-10-29 | `checkin_now` runs even when paused or on leave | Explicit user request; a check-in only reads and reports |
+| 2026-10-29 | Leave mode suppresses proposals with purpose `chase` or `caller_draft` in the graph; brief and chase window skipped | E53 |
+| 2026-10-29 | Reset needs pause + a one-time 10-minute token; keeps audit and action rows (task id cleared), delta tokens and controls; deletes tasks, events, jobs, token map, lessons, schedule runs, checkpoints | Deleting actions would break audit foreign keys |
+| 2026-10-29 | Approval cards are not throttled by quiet hours or the push cap; other notifications are (urgent ones always go) | Approvals already expire in 24 h; F14 cap applies to pushes |
+| 2026-10-29 | `PrivacyHook.outbound` is async | The pseudonymiser reads the token map and people from the database |
+| 2026-10-29 | Name matching: full and reversed names ("Laurent, Sophie") in any case; single first/last names only when capitalised; accents, case and zero-width characters ignored | First names that are also words ("Will", "Rose") |
+| 2026-10-29 | Token-like text in source ("CALLER", "USER_3") that the task does not own is neutralised before pseudonymising | Otherwise restore() would turn it into a real name |
+| 2026-10-29 | Forbidden phrases default adds `24h`; matching allows plurals and "24-hour"; applied to subject, body and attachment names | Obvious variants of the prompt's defaults |
+| 2026-10-29 | Images in messages without the `images` data class are refused | A caller forgetting to declare a screenshot must not slip it past the level |
+| 2026-10-29 | `apscheduler.*` added to mypy `ignore_missing_imports` | APScheduler 3 ships no type information |
+| 2026-10-29 | Memory is four tiers: core (profile, preferences, approved lessons; always first), working (card, facts, checked summary), episodic (event log), semantic (precedents, documents, directory) | Public context-engineering practice (finite attention budget, compaction, just-in-time retrieval, tiered memory) applied under our golden rules |
+| 2026-10-29 | Packet order is stable first, volatile last; the user's own sections go in a plain message, everything else wrapped as `<data>`; personal text is in messages, not the system prompt | Prefix caching; newest events nearest the instructions; the gateway only pseudonymises messages |
+| 2026-10-29 | Budgets follow F10, plus `rules` 150, `older_events` 150 and `style` 300 (drafting only); each section shrinks its own way and keeps 25 tokens for its note | F10 lists "directory or rules"; pointers to older events keep 200-event tasks reachable |
+| 2026-10-29 | Nothing is dropped silently: trimmed and left-out items are listed by ref (`te:<id>`, `doc:<id>`) and fetched with the Silent `search_memory` tool, through the gate; only the task's own events can be fetched | Just-in-time retrieval; no cross-task reads |
+| 2026-10-29 | Events the summary does not cover yet are shown before the plain last five; the trigger event is always in; one event takes at most a third of the event budget | A summary that fell behind must not hide what happened; one 50k-character mail must not starve the rest |
+| 2026-10-29 | Summary check covers ids, dates (any format, year ignored), current state, closure claims, invented tokens and length; after a second failure the previous summary stays and coverage does not advance; `_summary_check` fact records why | F09 "summary drifts"; a drifting summary is never stored |
+| 2026-10-29 | The summary is also updated before a run parks on an approval | A task can wait days for a decision |
+| 2026-10-29 | `put_summary(expected_version=0)` means "no summary may exist yet" | The first concurrent write was silently overwritten before |
+| 2026-10-29 | Precedents are written when a task reaches done (Ledger state listener), stored with role words instead of per-task tokens, capped at 200 per (project, kind), oldest first out | USER_3 from another task restored in a draft would name the wrong person |
+| 2026-10-29 | Precedent ranking: 0.6 relevance (bm25, normalised) + 0.2 recency (90-day half-life) + project/kind/site/outcome boosts; one record per title; own task excluded | Generative-agents style retrieval scoring, deterministic |
+| 2026-10-29 | FTS search gains any-word matching and returns document metadata | All-words matching on a dozen keywords finds nothing |
+| 2026-10-29 | Conflicting lessons: same subject (text before ":" on the first line), newest wins | F09 edge case |
+| 2026-10-29 | Directory entries older than 90 days are shown as stale with their last confirmation date | F09 / R10 |
+| 2026-10-29 | Participants fact is stored Fernet-encrypted with the token-map key when a cipher is given | It held real names and addresses in plain text; F09 says those live only encrypted |
+| 2026-10-29 | Facts need a source_ref; a changed value leaves a `fact` event; `_`-prefixed and `participants` facts never reach the model | Provenance (F09) |
+| 2026-10-29 | Language by stopwords (en/de/fr/it); a translator hook stores a pseudonymised translation the packet uses | F10 edge case; translation is a model call, only at level text or above |
+| 2026-10-29 | Retention purges free-text keys from intake payloads (bodies, subjects, chat text) after `raw_text_days`, the payloads behind expired task events, screenshots by file age, context logs after 30 days; nightly at 02:30 | Raw text lives in `events.payload_json`; pseudonymised memory is kept |
+| 2026-10-29 | Personal memory in `<repo>/memory` (git-ignored), created from package templates; template comments are dropped so an untouched file costs nothing; re-read on mtime/size change | Prompt 1.8 item 1 |
+| 2026-10-29 | `ModelRunner` protocol; `RecordedModel` replays recorded outputs for tests and the harness | Recorded model responses (prompt 1.8 tests) |
+| 2026-10-29 | Step modules load only from `agent.recipes.steps.*`; reload only when their source changed | A YAML file must not import arbitrary code; a reload re-runs the module in its old namespace |
+| 2026-10-29 | Recipe file name must equal `name`; duplicate names, unknown tools and Hand off tools (by registry, name pattern or policy) turn the recipe off with the error in `recipes_state` | F12, E48 |
+| 2026-10-29 | Each run pins the recipe versions it started on (last 5 kept per recipe); a recipe turned off or removed mid-run is skipped | F12 hot reload |
+| 2026-10-29 | Several recipes on one task run one after another, one turn per graph step; `exclusive_with`: the declaring recipe wins, alphabetical when both declare | E49 |
+| 2026-10-29 | StepContext: read-only adapter proxy (read-name allowlist minus registry write methods), `read()` for Silent tools through gate + outbox, `propose()` only for listed tools; not a sandbox for foreign code | Golden rule 1 in step code |
+| 2026-10-29 | After a model call that saw other people's text, later proposals are flagged `triggered_by_fetched_content` (at least Ask) | Golden rule 4; a model-proposed Report after reading a mail became an Ask in tests |
+| 2026-10-29 | A recipe's packet is reduced to the highest data class it declares; extra step data of an undeclared class is refused | E12 reduced form instead of failing the job |
+| 2026-10-29 | Recipes without a task (scheduled) may not propose Ask tools | No task to park an approval on |
+| 2026-10-29 | `poll` triggers match intake events from that source; `every` is advisory (a load warning when faster than the poller) | Pollers are global (F02) |
+| 2026-10-29 | `creates_task` ids are the next free number for the prefix (`REF-0413`) | Natural ids per CLAUDE.md; concurrent creates of the same id would fail on the primary key (pollers ingest one at a time) |
 
 ## Session log
 
@@ -203,3 +256,5 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-28 | 0.6 | Done: auth (MSAL + DPAPI cache), `agentd doctor`, `agentd signin`; 138 tests, ruff and mypy clean. Real run: ICA, network OK; Graph/Power BI/Slack waiting on access; Q11 answered | User: IT request, Slack app, laptop sleep |
 | 2026-10-28 | A01/A02 (early) | Outlook COM adapter + doctor check; 145 tests green. Live: Inbox 616 items, 45 today read OK; default calendar shows 0 items (sync or empty, to confirm). Teams and Power BI email notifications turned on | Confirm calendar in classic Outlook; run 1.1 |
 | 2026-10-29 | 1.1–1.4 | Done: coordinator, ledger, policy gate + outbox + undo, worker pool; 386 tests, ruff and mypy clean; policy coverage 99 % | Run 1.5 (LangGraph task graph and approvals) |
+| 2026-10-29 | 1.5–1.7 | Done: task graph + approvals, scheduler + controls + notifier, privacy layer; 492 tests, ruff and mypy clean; coverage policy 99–100 %, privacy 97–100 %, runtime (new) 96–97 %, graphs 90–94 %, approvals 89 %+ | Set `me` in config/config.yaml; run 1.8 |
+| 2026-10-29 | 1.8–1.9 | Done: memory and context builder, recipe engine; 558 tests, ruff and mypy clean; coverage memory 82–98 %, recipes 91–97 % | Run 1.10 (Outlook adapters); recipes R01–R06 in 1.14 use the harness |

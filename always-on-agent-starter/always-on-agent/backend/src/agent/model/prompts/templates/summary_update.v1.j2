@@ -1,0 +1,17 @@
+Rewrite the running summary of one work task.
+
+You get the task card (authoritative), the previous summary and the events since it was written.
+Write a new summary of at most {{ max_words }} words that a colleague could act on:
+- what the problem is, who is involved (as tokens), what has been done, what is open, what happens next;
+- keep anything from the previous summary that still matters; drop what no longer does;
+- use only ids, dates, people tokens and states that appear in the card, the previous summary or the
+  events. Never invent them. If the card and an event disagree, the card is right;
+- do not call the task closed, done or resolved unless the card's state is done.
+Set current_state to the card's state exactly.
+{% if problems %}
+
+Your previous attempt did not match the record. Fix exactly these problems:
+{% for problem in problems %}
+- {{ problem }}
+{% endfor %}
+{% endif %}

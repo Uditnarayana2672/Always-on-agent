@@ -51,3 +51,19 @@ class ModelOutputError(AgentError):
 
 class NeedsSignIn(AgentError):
     """No cached token could be refreshed silently; the user must sign in again."""
+
+
+class LeakDetected(AgentError):
+    """A known real name, email or phone number would reach the model after pseudonymisation."""
+
+
+class UnknownToken(AgentError):
+    """A draft holds a pseudonym token that does not exist for its task (the model invented it)."""
+
+
+class OutboundBlocked(AgentError):
+    """An outgoing draft failed the outbound checks (forbidden wording, outside recipient, attachment)."""
+
+
+class ControlError(AgentError):
+    """A control (pause, resume, reset, leave mode) could not be applied."""

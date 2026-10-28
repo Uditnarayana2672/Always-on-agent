@@ -27,6 +27,12 @@ def secret_set(name: str) -> None:
 @app.command()
 def run(fake: bool = typer.Option(False, "--fake", help="Use fake adapters and fixtures.")) -> None:
     """Run the agent."""
+    from agent.core.config import get_config
+    from agent.memory.personal import PersonalMemory
+
+    personal = PersonalMemory(get_config().paths.memory_dir or None)
+    for path in personal.ensure():
+        typer.echo(f"created {path} from its template; edit it to tell the agent about you")
     if not fake:
         typer.echo("not implemented yet")
         return

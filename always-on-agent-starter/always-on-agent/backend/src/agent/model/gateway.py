@@ -9,7 +9,7 @@ import logging
 import re
 import time
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ValidationError
 
@@ -39,6 +39,23 @@ class GatewayResult[T: BaseModel](BaseModel):
     repaired: bool = False
     input_tokens: int = 0
     output_tokens: int = 0
+
+
+class ModelRunner(Protocol):
+    """What memory and recipes need from the gateway (ModelGateway, or RecordedModel in tests)."""
+
+    async def run[T: BaseModel](
+        self,
+        purpose: str,
+        messages: list[dict[str, Any]],
+        schema: type[T],
+        data_classes: set[DataClass],
+        tier: Tier = "auto",
+        task_id: str | None = None,
+        recipe: str | None = None,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+        instructions: str | None = None,
+    ) -> GatewayResult[T]: ...
 
 
 def _tools_unsupported(exc: IcaRequestError) -> bool:
@@ -107,7 +124,7 @@ class ModelGateway:
         max_tokens: int = DEFAULT_MAX_TOKENS,
         instructions: str | None = None,
     ) -> GatewayResult[T]:
-        messages = self._privacy.outbound(messages, data_classes, task_id)
+        messages = await self._privacy.outbound(messages, data_classes, task_id)
         chosen, downgraded = await self._route(purpose, tier)
         model = self._client.model_id(chosen)
         system = render("base_system", task_instructions=instructions)

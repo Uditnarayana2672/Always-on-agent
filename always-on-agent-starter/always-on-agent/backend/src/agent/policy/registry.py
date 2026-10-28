@@ -69,6 +69,7 @@ class ToolDef:
     data_level: DataRuleLevel | None = None  # data-rule level the args need
     hard: HardCategory | None = None
     lookup: str | None = None  # adapter method: did a side effect with this idempotency key happen?
+    content_field: str | None = None  # the arg holding the text an approval card shows (editable)
     description: str = ""
     tags: frozenset[str] = field(default_factory=frozenset)
 
@@ -102,6 +103,8 @@ class Registry:
             raise ValueError(f"{tool.name} needs exactly one of adapter or handler")
         if tool.adapter is not None and tool.method is None:
             raise ValueError(f"{tool.name} names an adapter but no method")
+        if tool.content_field is not None and tool.content_field not in tool.args_model.model_fields:
+            raise ValueError(f"{tool.name}: content_field {tool.content_field!r} is not an argument")
         self._tools[tool.name] = tool
         return tool
 
@@ -119,6 +122,7 @@ class Registry:
         data_level: DataRuleLevel | None = None,
         hard: HardCategory | None = None,
         lookup: str | None = None,
+        content_field: str | None = None,
         description: str = "",
     ) -> Callable[[type[BaseModel]], type[BaseModel]]:
         """Class decorator on the tool's Pydantic args model."""
@@ -138,6 +142,7 @@ class Registry:
                     data_level=data_level,
                     hard=hard,
                     lookup=lookup,
+                    content_field=content_field,
                     description=description or (args_model.__doc__ or "").strip(),
                 )
             )

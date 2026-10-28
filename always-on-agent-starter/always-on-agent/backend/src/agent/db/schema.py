@@ -106,7 +106,13 @@ task_events = Table(
     Column("text_pseudonymised", Text, nullable=False),
     Column("source_ref", Text),
     Column("raw_expires_at", UTCDateTime),
+    Column("kind", Text, nullable=False, server_default="note"),  # message | edit | note | ledger | fact
+    Column("headline", Text),  # one pseudonymised line, for the older-events index
+    Column("lang", Text),
+    Column("text_translated", Text),  # pseudonymised translation; the packet uses it when set
+    Column("importance", Integer, nullable=False, server_default="0"),
     Index(None, "task_id", "at"),
+    Index(None, "source_ref"),
 )
 
 task_summaries = Table(
@@ -116,6 +122,8 @@ task_summaries = Table(
     Column("version", Integer, nullable=False),
     Column("text", Text, nullable=False),
     Column("updated_at", UTCDateTime, nullable=False),
+    Column("covers_through", Integer),  # last task_events.id the summary includes
+    Column("verified", Boolean, nullable=False, server_default="0"),
 )
 
 task_facts = Table(
@@ -175,7 +183,14 @@ action_requests = Table(
     Column("expires_at", UTCDateTime),
     Column("decided_at", UTCDateTime),
     Column("result_json", Text),
+    Column("args_digest", Text),  # digest of the args alone; content_hash also covers the shown content
+    Column("content", Text),  # what the approval card shows
+    Column("edited", Boolean, nullable=False, server_default="0"),
+    Column("decided_by", Text),  # slack | console | system
+    Column("reason", Text),  # reject, invalidation or expiry reason
+    Column("surfaces_json", Text, nullable=False, server_default="{}"),  # channel -> card ref
     Index(None, "status"),
+    Index(None, "task_id"),
 )
 
 audit_log = Table(
@@ -224,13 +239,15 @@ jobs = Table(
 token_map = Table(
     "token_map",
     metadata,
+    Column("scope", Text, nullable=False),  # task id, or "_global" outside a task
     _task_fk(nullable=True),
     Column("token", Text, nullable=False),
     Column("kind", Text, nullable=False),
     Column("real_value_encrypted", LargeBinary, nullable=False),
     Column("value_digest", Text, nullable=False),
-    PrimaryKeyConstraint("token"),
-    UniqueConstraint("kind", "value_digest"),
+    Column("canonical", Boolean, nullable=False, server_default="0"),  # the value restore() writes back
+    PrimaryKeyConstraint("scope", "kind", "value_digest"),
+    Index(None, "scope", "token"),
 )
 
 documents = Table(
@@ -241,6 +258,7 @@ documents = Table(
     Column("title", Text, nullable=False),
     Column("body", Text, nullable=False),
     Column("meta_json", Text, nullable=False, server_default="{}"),
+    Index(None, "source"),
 )
 
 recipes_state = Table(
@@ -252,6 +270,9 @@ recipes_state = Table(
     Column("enabled", Boolean, nullable=False, server_default="1"),
     Column("last_run_at", UTCDateTime),
     Column("stats_json", Text, nullable=False, server_default="{}"),
+    Column("error", Text),
+    Column("content_hash", Text),
+    Column("loaded_at", UTCDateTime),
 )
 
 lessons = Table(
@@ -319,5 +340,18 @@ schedule_runs = Table(
     Column("due_at", UTCDateTime, nullable=False),
     Column("ran_at", UTCDateTime),
     Column("status", Text, nullable=False),  # ran | missed | caught_up | skipped
+    Column("detail", Text),
     UniqueConstraint("schedule", "due_at"),
+)
+
+context_log = Table(
+    "context_log",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("at", UTCDateTime, nullable=False),
+    Column("task_id", Text),
+    Column("recipe", Text),
+    Column("tokens", Integer, nullable=False),
+    Column("manifest_json", Text, nullable=False),  # what each run's packet held, trimmed and left out
+    Index(None, "task_id"),
 )

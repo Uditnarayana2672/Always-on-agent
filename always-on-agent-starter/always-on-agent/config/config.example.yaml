@@ -25,7 +25,12 @@ allowed_groups: { doxis_l2: "" }
 clock: { start: opened, pause_on_hold: false, thresholds_hours: [12, 18, 22] }
 workers: { pool_size: 4, max_steps_per_run: 12, job_timeout_seconds: 300, lock_ttl_minutes: 10 }
 retention: { raw_text_days: 14, screenshots_days: 7, transcripts: delete_after_extract }
-paths: { workbook: "", rights_matrix: "", specs: [], screenshots_inbox: "" }
+paths: { workbook: "", rights_matrix: "", specs: [], screenshots_inbox: "", memory_dir: "", recipes_dir: "" }   # empty memory_dir -> <repo>/memory, recipes_dir -> config/recipes
 console: { host: 127.0.0.1, port: 8765 }
-database: { url: "sqlite+aiosqlite:///agent.db" }   # relative to the working directory
+database: { url: "sqlite+aiosqlite:///agent.db", checkpoints_path: checkpoints.db }   # relative to the working directory
 slack: { user_id: "" }                    # your Slack member id (U...)
+privacy:
+  forbidden_phrases: [KPI, 24 hours, 24h, metric]   # never in caller-facing drafts; plurals and "24-hour" match too
+  user_id_patterns: ['\b[a-zA-Z]\d{6}\b']           # extra user-id regexes; DOMAIN\user is always caught
+  max_attachment_mb: 10
+me: []                                    # your own addresses: your messages never cancel pending approvals

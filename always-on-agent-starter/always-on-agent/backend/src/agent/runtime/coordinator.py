@@ -9,8 +9,13 @@ links (mail conversation, Teams chat, Slack thread, dataset) -> recipe create ru
 
 Fetched content is data: ids found in text only route the event to a ledger entry; they never make
 anything run above Silent (golden rule 4). Deleted messages are recorded and never actionable.
+
+Before a job is enqueued for a task, open approvals on that task are invalidated (F07, E16) unless the
+event is the user's own (their mail, chat, Slack click or console action). Schedule fires never
+invalidate; a deleted message does, since the draft may answer it.
 """
 
+import inspect
 import logging
 import re
 from collections.abc import Awaitable, Callable, Sequence
@@ -107,12 +112,24 @@ class TaskSpec(BaseModel):
     links: list[tuple[str, str]] = Field(default_factory=list)  # (kind, external_id)
 
 
+class Invalidator(Protocol):
+    """ApprovalService.invalidate_for_task (1.5)."""
+
+    async def invalidate_for_task(
+        self, task_id: str, actor: str, except_actor: str = "user", reason: str = "a new message arrived"
+    ) -> list[str]: ...
+
+
 class CreateRule(Protocol):
-    """A recipe's rule for making a task from an event that matched nothing else (filled in by 1.9)."""
+    """A recipe's rule for making a task from an event that matched nothing else. match may be async."""
 
     name: str
 
-    def match(self, event: Event) -> TaskSpec | None: ...
+    def match(self, event: Event) -> Awaitable[TaskSpec | None] | TaskSpec | None: ...
+
+
+# Which recipes an event triggers (recipes.triggers.RecipeMatcher); their names go in the job payload.
+RecipeMatcher = Callable[[Event], list[str]]
 
 
 CREATE_RULES: list[CreateRule] = []
@@ -289,6 +306,9 @@ class Coordinator:
         clock: Clock,
         create_rules: Sequence[CreateRule] | None = None,
         clock_hours: Callable[[Task], Awaitable[float | None]] | None = None,
+        approvals: Invalidator | None = None,
+        me: Sequence[str] = (),
+        recipe_matcher: RecipeMatcher | None = None,
     ) -> None:
         self._tasks = tasks
         self._events = events
@@ -298,6 +318,9 @@ class Coordinator:
         self._rules = CREATE_RULES if create_rules is None else create_rules
         # Pass Ledger.age_hours-based lookups for pause-aware age; default is wall time since clock start.
         self._clock_hours = clock_hours or self._wall_clock_hours
+        self._approvals = approvals
+        self._match_recipes = recipe_matcher
+        self._me = {m.strip().lower() for m in me if m.strip()}
 
     async def ingest(self, raw: Any, source: Source) -> IngestResult:
         event = normalise(raw, source)
@@ -313,8 +336,23 @@ class Coordinator:
         task_ids, resolved_by, created = await self._resolve(event)
 
         if not task_ids:
+            if event.source == "schedule" and event.actionable:
+                # Brief, check-ins, digests and pollers belong to no task: one task-less job.
+                await self._events.route(event_id, None)
+                job_id = await self._jobs.enqueue(
+                    "schedule",
+                    payload={
+                        "event_id": event_id,
+                        "schedule": event.payload.get("schedule"),
+                        **event.payload,
+                    },
+                    priority=priority_for("schedule"),
+                )
+                return IngestResult(event_id=event_id, job_ids=[job_id], resolved_by="none")
             await self._events.route(event_id, None, status="digest")
             return IngestResult(event_id=event_id, status="digest")
+
+        await self._invalidate(event, task_ids)
 
         if not event.actionable:
             # Recorded against the task for history; never queued.
@@ -335,6 +373,22 @@ class Coordinator:
             created=created,
             resolved_by=resolved_by,
         )
+
+    def is_users_own(self, event: Event) -> bool:
+        """The user's own words or clicks: Slack (the user's DM with the agent), the console, or a
+        message sent from one of the user's addresses."""
+        if event.source in ("slack", "api"):
+            return True
+        sender = str(event.payload.get("sender") or "").strip().lower()
+        return bool(sender) and sender in self._me
+
+    async def _invalidate(self, event: Event, task_ids: list[str]) -> None:
+        if self._approvals is None or event.source == "schedule":
+            return
+        actor = "user" if self.is_users_own(event) else event.source
+        reason = "the message was deleted" if event.kind == "message_deleted" else "a new message arrived"
+        for task_id in task_ids:
+            await self._approvals.invalidate_for_task(task_id, actor, reason=reason)
 
     async def enqueue_resume(self, task_id: str, action_id: str) -> int:
         """Called by approvals (1.5) when the user decides."""
@@ -371,7 +425,8 @@ class Coordinator:
 
         if event.actionable:
             for rule in self._rules:
-                spec = rule.match(event)
+                found = rule.match(event)
+                spec = await found if inspect.isawaitable(found) else found
                 if spec is None:
                     continue
                 if await self._tasks.get(spec.id) is None:
@@ -453,11 +508,14 @@ class Coordinator:
         task = await self._tasks.get(task_id)
         hours = await self._clock_hours(task) if task else None
         kind: JobKind = "schedule" if event.source == "schedule" else "new_event"
+        payload: dict[str, Any] = {"event_id": event.id, "source": event.source, "kind": event.kind}
+        recipes = self._match_recipes(event) if self._match_recipes is not None else []
+        if task is not None and task.recipe and task.recipe not in recipes and event.source != "schedule":
+            recipes = [task.recipe, *recipes]
+        if recipes:
+            payload["recipes"] = recipes
         return await self._jobs.enqueue(
-            kind,
-            task_id=task_id,
-            payload={"event_id": event.id, "source": event.source, "kind": event.kind},
-            priority=priority_for(signal, hours),
+            kind, task_id=task_id, payload=payload, priority=priority_for(signal, hours)
         )
 
     async def _wall_clock_hours(self, task: Task) -> float | None:

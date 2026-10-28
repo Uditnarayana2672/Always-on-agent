@@ -78,5 +78,5 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [[tool.mypy.overrides]]
-module = ["msal", "msal_extensions", "win32com", "win32com.*", "pythoncom", "pywintypes"]
+module = ["msal", "msal_extensions", "win32com", "win32com.*", "pythoncom", "pywintypes", "apscheduler.*"]
 ignore_missing_imports = true

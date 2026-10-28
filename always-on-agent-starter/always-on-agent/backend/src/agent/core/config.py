@@ -144,6 +144,8 @@ class PathsConfig(_Model):
     rights_matrix: str
     specs: list[str]
     screenshots_inbox: str
+    memory_dir: str = ""  # profile.md and preferences.md; empty -> <repo>/memory (git-ignored)
+    recipes_dir: str = ""  # recipe YAML files; empty -> config/recipes
 
 
 class ConsoleConfig(_Model):
@@ -153,6 +155,28 @@ class ConsoleConfig(_Model):
 
 class DatabaseConfig(_Model):
     url: str = "sqlite+aiosqlite:///agent.db"
+    checkpoints_path: str = "checkpoints.db"  # LangGraph checkpoints, a separate SQLite file
+
+
+DEFAULT_FORBIDDEN_PHRASES = ["KPI", "24 hours", "24h", "metric"]
+
+
+class PrivacyConfig(_Model):
+    # Never in caller-facing drafts. Matching ignores case, accents, plurals and "24-hour" spacing.
+    forbidden_phrases: list[str] = Field(default_factory=lambda: list(DEFAULT_FORBIDDEN_PHRASES))
+    # Extra regexes for user ids (Windows logins like CORP\jdoe are always caught).
+    user_id_patterns: list[str] = Field(default_factory=lambda: [r"\b[a-zA-Z]\d{6}\b"])
+    max_attachment_mb: int = Field(default=10, gt=0)
+
+    @field_validator("user_id_patterns")
+    @classmethod
+    def _compiles(cls, value: list[str]) -> list[str]:
+        for pattern in value:
+            try:
+                re.compile(pattern)
+            except re.error as exc:
+                raise ValueError(f"bad user id pattern {pattern!r}: {exc}") from exc
+        return value
 
 
 class SlackConfig(_Model):
@@ -179,6 +203,8 @@ class Config(_Model):
     console: ConsoleConfig
     database: DatabaseConfig = DatabaseConfig()
     slack: SlackConfig = SlackConfig()
+    privacy: PrivacyConfig = PrivacyConfig()
+    me: list[str] = Field(default_factory=list)  # the user's own addresses and chat ids
 
 
 def load_config(path: Path | None = None) -> Config:

@@ -1,10 +1,11 @@
 """Full-text search over documents (F09). FTS5 specifics stay in this module."""
 
+import json
 import re
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel
-from sqlalchemy import delete, insert, text
+from sqlalchemy import delete, insert, select, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from agent.db.schema import documents
@@ -16,6 +17,7 @@ class SearchHit(BaseModel):
     title: str
     snippet: str
     score: float
+    meta: dict[str, Any] = {}
 
 
 class SearchIndex(Protocol):
@@ -23,13 +25,15 @@ class SearchIndex(Protocol):
         self, doc_id: str, source: str, title: str, body: str, meta_json: str = "{}"
     ) -> None: ...
     async def remove(self, doc_id: str) -> None: ...
-    async def search(self, query: str, limit: int = 10, source: str | None = None) -> list[SearchHit]: ...
+    async def search(
+        self, query: str, limit: int = 10, source: str | None = None, any_word: bool = False
+    ) -> list[SearchHit]: ...
 
 
-def _fts_query(query: str) -> str:
-    """Turn free text into a safe FTS5 query: each word quoted, all words required."""
-    words = re.findall(r"\w+", query)
-    return " ".join(f'"{w}"' for w in words)
+def _fts_query(query: str, any_word: bool = False) -> str:
+    """Turn free text into a safe FTS5 query: each word quoted; all words required, or any with any_word."""
+    words = list(dict.fromkeys(re.findall(r"\w+", query)))
+    return (" OR " if any_word else " ").join(f'"{w}"' for w in words)
 
 
 class Fts5SearchIndex:
@@ -63,12 +67,14 @@ class Fts5SearchIndex:
         )
         await conn.execute(delete(documents).where(documents.c.id == doc_id))
 
-    async def search(self, query: str, limit: int = 10, source: str | None = None) -> list[SearchHit]:
-        match = _fts_query(query)
+    async def search(
+        self, query: str, limit: int = 10, source: str | None = None, any_word: bool = False
+    ) -> list[SearchHit]:
+        match = _fts_query(query, any_word)
         if not match:
             return []
         sql = (
-            "SELECT d.id, d.source, d.title, "
+            "SELECT d.id, d.source, d.title, d.meta_json, "
             "snippet(documents_fts, 2, '[', ']', '…', 12) AS snippet, "
             "bm25(documents_fts, 0.0, 5.0, 1.0) AS score "
             "FROM documents_fts JOIN documents d ON d.id = documents_fts.doc_id "
@@ -84,7 +90,23 @@ class Fts5SearchIndex:
         # bm25 is lower-is-better; expose higher-is-better.
         return [
             SearchHit(
-                id=r["id"], source=r["source"], title=r["title"], snippet=r["snippet"], score=-r["score"]
+                id=r["id"],
+                source=r["source"],
+                title=r["title"],
+                snippet=r["snippet"],
+                score=-r["score"],
+                meta=json.loads(r["meta_json"] or "{}"),
             )
             for r in rows
         ]
+
+    async def get(self, doc_id: str) -> dict[str, Any] | None:
+        async with self._engine.connect() as conn:
+            row = (await conn.execute(select(documents).where(documents.c.id == doc_id))).mappings().first()
+        return dict(row) if row else None
+
+    async def by_source(self, source: str) -> list[dict[str, Any]]:
+        """id and meta of every document of one kind (no bodies)."""
+        query = select(documents.c.id, documents.c.meta_json).where(documents.c.source == source)
+        async with self._engine.connect() as conn:
+            return [dict(r) for r in (await conn.execute(query)).mappings().all()]

@@ -17,6 +17,7 @@ check() is pure and synchronous: it returns a Decision and never calls an adapte
 
 import hashlib
 import json
+import unicodedata
 from collections.abc import Iterable, Mapping
 from typing import Any, Literal
 
@@ -71,9 +72,26 @@ class Decision(BaseModel):
 
 
 def digest_args(args: Mapping[str, Any]) -> str:
-    """Stable sha256 over canonical JSON; the content hash approvals bind to."""
+    """Stable sha256 over canonical JSON of the normalised args."""
     canonical = json.dumps(args, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def normalise_content(content: str) -> str:
+    """NFC, Unix line ends, no trailing spaces: an edit that only changes these is not an edit."""
+    text = unicodedata.normalize("NFC", content).replace("\r\n", "\n").replace("\r", "\n")
+    return "\n".join(line.rstrip() for line in text.split("\n")).strip()
+
+
+def content_hash(args_digest: str, content: str | None) -> str:
+    """The hash an approval binds to: the args plus the content the card shows (golden rule 2).
+
+    Without content (nothing shown beyond the args) it is the args digest itself.
+    """
+    if content is None:
+        return args_digest
+    payload = json.dumps({"args": args_digest, "content": normalise_content(content)}, sort_keys=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 class Gate:

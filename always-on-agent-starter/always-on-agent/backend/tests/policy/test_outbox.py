@@ -240,7 +240,13 @@ async def test_failed_ask_needs_a_fresh_approval(env: Env) -> None:
     await approve(env, res.action_id)
     assert (await env.outbox.execute(res.action_id, TASK)).status == "failed"
     again = await env.outbox.submit("send_mail", SEND, TASK)
-    assert again.status == "failed" and env.world.mail.sent == []
+    # 4.3 failed -> proposed: the same action comes back for a fresh approval; nothing is sent.
+    assert again.status == "proposed" and again.action_id == res.action_id and env.world.mail.sent == []
+    with pytest.raises(PolicyViolation, match="proposed"):
+        await env.outbox.execute(res.action_id, TASK)
+    await approve(env, res.action_id)
+    assert (await env.outbox.execute(res.action_id, TASK)).status == "done"
+    assert env.world.mail.sent == ["D1"]
 
 
 async def test_policy_tightened_while_approval_pending(env: Env) -> None:

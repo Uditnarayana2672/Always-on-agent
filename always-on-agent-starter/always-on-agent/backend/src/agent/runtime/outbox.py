@@ -28,13 +28,14 @@ from agent.core.errors import ApprovalConflict, PolicyViolation
 from agent.core.ids import new_ulid
 from agent.db.repositories import ActionRepo, ActionRequest, AuditRepo, UndoRepo
 from agent.policy.audit import Auditor
-from agent.policy.gate import Decision, Gate, GateContext
+from agent.policy.gate import Decision, Gate, GateContext, content_hash
 from agent.policy.modes import RANK
 from agent.policy.registry import Registry, ToolDef
 
 log = logging.getLogger(__name__)
 
 APPROVAL_TTL = timedelta(hours=24)
+REPROPOSABLE = ("failed", "expired", "invalidated")
 
 
 class OutboxResult(BaseModel):
@@ -88,9 +89,12 @@ class Outbox:
         ctx: GateContext,
         idempotency_key: str | None = None,
         register_inverse: bool = True,
+        content: str | None = None,
     ) -> OutboxResult:
+        """content is what an approval card shows (a draft body); the approval binds to it and the args."""
         decision = self._gate.check(tool, args, ctx)
-        key = idempotency_key or f"{ctx.task_id or '-'}:{tool}:{decision.args_digest}"
+        bound = content_hash(decision.args_digest, content)
+        key = idempotency_key or f"{ctx.task_id or '-'}:{tool}:{bound}"
 
         existing = await self._actions.by_idempotency_key(key)
         if existing is not None:
@@ -105,9 +109,11 @@ class Outbox:
             args=decision.args,
             mode=decision.mode,
             status=status,
-            content_hash=decision.args_digest,
+            content_hash=bound,
             idempotency_key=key,
             expires_at=self._clock.now_utc() + APPROVAL_TTL if status == "proposed" else None,
+            args_digest=decision.args_digest,
+            content=content,
         )
         await self._auditor.decision(decision, ctx, status, action_id)
         if decision.flagged:
@@ -131,6 +137,24 @@ class Outbox:
             if decision.needs_approval:
                 await self._actions.transition(existing.id, "held", "proposed")
                 return OutboxResult(action_id=existing.id, status="proposed", decision=decision)
+        # 4.3: a failed, expired or invalidated proposal comes back only with a fresh approval.
+        if (
+            existing.status in REPROPOSABLE
+            and existing.mode == "ask"
+            and decision.needs_approval
+            and not decision.held
+            and await self._actions.decide(
+                existing.id,
+                (existing.status,),
+                "proposed",
+                expires_at=self._clock.now_utc() + APPROVAL_TTL,
+                decided_at=None,
+                decided_by=None,
+                reason=None,
+                surfaces_json="{}",
+            )
+        ):
+            return OutboxResult(action_id=existing.id, status="proposed", decision=decision)
         if existing.status in ("ready", "approved", "executing"):
             return await self.execute(existing.id, ctx, register_inverse=register_inverse)
         return OutboxResult(
@@ -219,7 +243,7 @@ class Outbox:
         return await self._record_done(action, tool_def, ctx, result, inverse_prep, register_inverse)
 
     def _recheck(self, action: ActionRequest, decision: Decision) -> str | None:
-        if decision.args_digest != action.content_hash:
+        if decision.args_digest != action.digest_of_args:
             return "content changed since it was proposed"
         if decision.mode == "blocked" or decision.mode == "hand_off":
             return f"now {decision.mode}: {'; '.join(decision.reasons)}"

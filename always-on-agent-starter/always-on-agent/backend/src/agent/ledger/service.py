@@ -4,6 +4,8 @@ The ledger is the source of truth for the board, the brief and the KPI watchdog.
 is compare-and-set and leaves a task event, so the history explains itself.
 """
 
+import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from typing import Literal
 
@@ -21,6 +23,11 @@ LINK_KINDS: frozenset[str] = frozenset(
 
 STALL_AFTER = timedelta(hours=24)
 
+log = logging.getLogger(__name__)
+
+# (task_id, from_state, to_state, actor): memory writes a precedent when a task closes.
+StateListener = Callable[[str, str, str, str], Awaitable[None]]
+
 
 class Ledger:
     def __init__(
@@ -31,6 +38,10 @@ class Ledger:
         self._clock_repo = clock_repo
         self._clock = clock
         self._config = config
+        self._listeners: list[StateListener] = []
+
+    def add_listener(self, listener: StateListener) -> None:
+        self._listeners.append(listener)
 
     # ------------------------------------------------------------ tasks and states
 
@@ -54,7 +65,20 @@ class Ledger:
         if not await self._tasks.transition(task_id, task.state, to_state):
             raise IllegalTransition(f"{task_id} changed state while moving {task.state} -> {to_state}")
         note = f"state {task.state} -> {to_state}" + (f": {reason}" if reason else "")
-        await self._memory.add_task_event(task_id, actor=actor, channel="ledger", text_pseudonymised=note)
+        await self._memory.add_task_event(
+            task_id,
+            actor=actor,
+            channel="ledger",
+            text_pseudonymised=note,
+            kind="ledger",
+            headline=note,
+            importance=1,
+        )
+        for listener in self._listeners:
+            try:
+                await listener(task_id, task.state, to_state, actor)
+            except Exception:
+                log.exception("state listener failed", extra={"task": task_id, "to": to_state})
         return await self.get(task_id)
 
     async def move_to(self, task_id: str, to_state: str, actor: str, reason: str = "") -> Task:
@@ -95,6 +119,10 @@ class Ledger:
         return await self.transition(
             task_id, "done", "source_system", "closed in ServiceNow", source_state=source_state
         )
+
+    async def set_next_action(self, task_id: str, text: str) -> None:
+        """The one-line 'what happens next' on the task card."""
+        await self._tasks.update(task_id, next_action=text)
 
     # ------------------------------------------------------------ clock
 
