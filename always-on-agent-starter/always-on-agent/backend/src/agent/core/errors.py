@@ -25,6 +25,14 @@ class PolicyViolation(AgentError):
     """A tool call was attempted above its mode."""
 
 
+class IllegalTransition(AgentError):
+    """A task state change that the lifecycle (architecture 4.2) does not allow."""
+
+
+class LinkConflict(AgentError):
+    """An external id is already linked to a different task."""
+
+
 class DataRuleViolation(AgentError):
     """Content would leave the laptop beyond the allowed data-rule level."""
 

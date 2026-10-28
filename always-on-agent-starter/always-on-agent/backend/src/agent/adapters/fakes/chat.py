@@ -46,6 +46,14 @@ class FakeTeams(FakeAdapter):
         self.posted.append({"chat_id": chat_id, "body": body, "tag": tag})
         return f"posted-{new_ulid()}"
 
+    async def find_tagged(self, chat_id: str, tag: str) -> str | None:
+        """The chat-side check before re-posting: did a message with this tag already go out?"""
+        self._check("find_tagged")
+        for i, post in enumerate(self.posted):
+            if post["chat_id"] == chat_id and post["tag"] == tag:
+                return f"posted-{i}"
+        return None
+
     async def get_transcript(self, meeting_id: str) -> str | None:
         self._check("get_transcript")
         return self.transcripts.get(meeting_id)

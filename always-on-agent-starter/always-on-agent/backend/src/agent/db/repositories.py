@@ -6,7 +6,7 @@ Each repository takes an AsyncEngine and a Clock. Times are aware UTC.
 import hashlib
 import hmac
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from cryptography.fernet import Fernet
@@ -55,7 +55,10 @@ class Task(BaseModel):
     affected_token: str | None = None
     site: str | None = None
     opened_at: datetime | None = None
+    assigned_at: datetime | None = None
+    email_received_at: datetime | None = None
     clock_started_at: datetime | None = None
+    clock_estimated: bool = False
     clock_paused: bool = False
     next_action: str | None = None
     recipe: str | None = None
@@ -81,6 +84,16 @@ class TaskRepo(_Repo):
         async with self._engine.begin() as conn:
             await conn.execute(update(s.tasks).where(s.tasks.c.id == task_id).values(**fields))
 
+    async def transition(self, task_id: str, from_state: str, to_state: str) -> bool:
+        """Compare-and-set the state; False if the task was not in from_state."""
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                update(s.tasks)
+                .where(s.tasks.c.id == task_id, s.tasks.c.state == from_state)
+                .values(state=to_state, updated_at=self._now())
+            )
+        return result.rowcount == 1
+
     async def heartbeat(self, task_id: str) -> None:
         await self.update(task_id, last_heartbeat_at=self._now())
 
@@ -91,11 +104,61 @@ class TaskRepo(_Repo):
         return [Task(**r) for r in await self._all(query)]
 
 
+class ClockRepo(_Repo):
+    """Pause intervals and fired thresholds for the 24-hour clock."""
+
+    async def open_pause(self, task_id: str, at: datetime, reason: str) -> bool:
+        """Start a pause unless one is already open. Returns True if a pause was started."""
+        async with self._engine.begin() as conn:
+            already = (
+                await conn.execute(
+                    select(s.clock_pauses.c.id).where(
+                        s.clock_pauses.c.task_id == task_id, s.clock_pauses.c.ended_at.is_(None)
+                    )
+                )
+            ).first()
+            if already:
+                return False
+            await conn.execute(insert(s.clock_pauses).values(task_id=task_id, started_at=at, reason=reason))
+        return True
+
+    async def close_pause(self, task_id: str, at: datetime) -> bool:
+        async with self._engine.begin() as conn:
+            result = await conn.execute(
+                update(s.clock_pauses)
+                .where(s.clock_pauses.c.task_id == task_id, s.clock_pauses.c.ended_at.is_(None))
+                .values(ended_at=at)
+            )
+        return result.rowcount > 0
+
+    async def pauses(self, task_id: str) -> list[tuple[datetime, datetime | None]]:
+        rows = await self._all(
+            select(s.clock_pauses.c.started_at, s.clock_pauses.c.ended_at)
+            .where(s.clock_pauses.c.task_id == task_id)
+            .order_by(s.clock_pauses.c.started_at)
+        )
+        return [(r["started_at"], r["ended_at"]) for r in rows]
+
+    async def fire_threshold(self, task_id: str, hours: int) -> bool:
+        """Record that a threshold fired; False if it had fired before."""
+        stmt = sqlite_insert(s.clock_thresholds).values(task_id=task_id, hours=hours, fired_at=self._now())
+        async with self._engine.begin() as conn:
+            result = await conn.execute(stmt.on_conflict_do_nothing())
+        return result.rowcount == 1
+
+
 # ---------------------------------------------------------------- events
 
 
 class EventRepo(_Repo):
-    async def add(self, source: str, kind: str, external_id: str, payload: dict[str, Any]) -> int | None:
+    async def add(
+        self,
+        source: str,
+        kind: str,
+        external_id: str,
+        payload: dict[str, Any],
+        received_at: datetime | None = None,
+    ) -> int | None:
         """Insert an event; returns its id, or None if (source, external_id) was already seen."""
         try:
             async with self._engine.begin() as conn:
@@ -104,8 +167,8 @@ class EventRepo(_Repo):
                         source=source,
                         kind=kind,
                         external_id=external_id,
-                        received_at=self._now(),
-                        payload_json=json.dumps(payload),
+                        received_at=received_at or self._now(),
+                        payload_json=json.dumps(payload, default=str),
                     )
                 )
         except IntegrityError:
@@ -118,6 +181,14 @@ class EventRepo(_Repo):
             await conn.execute(
                 update(s.events).where(s.events.c.id == event_id).values(task_id=task_id, status=status)
             )
+
+    async def get(self, event_id: int) -> dict[str, Any] | None:
+        return await self._one(select(s.events).where(s.events.c.id == event_id))
+
+    async def by_status(self, status: str, limit: int = 500) -> list[dict[str, Any]]:
+        return await self._all(
+            select(s.events).where(s.events.c.status == status).order_by(s.events.c.id).limit(limit)
+        )
 
     async def pending(self, limit: int = 100) -> list[dict[str, Any]]:
         return await self._all(
@@ -140,6 +211,9 @@ class Job(BaseModel):
     locked_by: str | None
     locked_at: datetime | None
     last_error: str | None
+
+
+AGE_BOOST_CEILING = 89
 
 
 class JobRepo(_Repo):
@@ -183,7 +257,7 @@ class JobRepo(_Repo):
         candidate = (
             select(j.c.id)
             .where(claimable, j.c.available_at <= now, ~busy_task)
-            .order_by(j.c.priority.desc(), j.c.available_at, j.c.id)
+            .order_by(self._effective_priority(j, now).desc(), j.c.available_at, j.c.id)
             .limit(1)
             .scalar_subquery()
         )
@@ -197,24 +271,57 @@ class JobRepo(_Repo):
             row = (await conn.execute(stmt)).mappings().first()
         return Job(**row) if row else None
 
-    async def complete(self, job_id: int) -> None:
-        await self._finish(job_id, status="done")
+    @staticmethod
+    def _effective_priority(j: Any, now: datetime) -> Any:
+        """Priority plus one per minute waited (starvation guard), capped at AGE_BOOST_CEILING.
 
-    async def fail(self, job_id: int, error: str, retry_at: datetime | None = None) -> None:
+        A job's own priority is never lowered, and age alone never lifts a job past approval resumes
+        (90) or urgent clocks (100).
+        """
+        now_text = now.astimezone(UTC).replace(tzinfo=None).isoformat(sep=" ")
+        waited = (func.julianday(now_text) - func.julianday(j.c.available_at)) * 1440
+        boosted = func.min(j.c.priority + func.max(waited, 0), AGE_BOOST_CEILING)
+        return func.max(j.c.priority, boosted)
+
+    async def complete(self, job_id: int, worker_id: str | None = None) -> bool:
+        return await self._finish(job_id, worker_id, status="done")
+
+    async def park(self, job_id: int, worker_id: str | None = None) -> bool:
+        """Waiting for an approval; a resume job is enqueued when the user decides."""
+        return await self._finish(job_id, worker_id, status="parked")
+
+    async def fail(
+        self, job_id: int, error: str, retry_at: datetime | None = None, worker_id: str | None = None
+    ) -> bool:
         if retry_at is None:
-            await self._finish(job_id, status="failed", last_error=error)
-        else:
-            await self._finish(job_id, status="queued", last_error=error, available_at=retry_at)
+            return await self._finish(job_id, worker_id, status="failed", last_error=error)
+        return await self._finish(job_id, worker_id, status="queued", last_error=error, available_at=retry_at)
 
-    async def _finish(self, job_id: int, **values: Any) -> None:
+    async def _finish(self, job_id: int, worker_id: str | None, **values: Any) -> bool:
+        """Release the job. With worker_id, only if that worker still holds it (its lock may have expired
+        and been taken over); returns False when it did not."""
+        cond = [s.jobs.c.id == job_id]
+        if worker_id is not None:
+            cond += [s.jobs.c.locked_by == worker_id, s.jobs.c.status == "running"]
         async with self._engine.begin() as conn:
-            await conn.execute(
-                update(s.jobs).where(s.jobs.c.id == job_id).values(locked_by=None, locked_at=None, **values)
+            result = await conn.execute(
+                update(s.jobs).where(*cond).values(locked_by=None, locked_at=None, **values)
             )
+        return result.rowcount == 1
 
     async def get(self, job_id: int) -> Job | None:
         row = await self._one(select(s.jobs).where(s.jobs.c.id == job_id))
         return Job(**row) if row else None
+
+    async def for_task(self, task_id: str) -> list[Job]:
+        rows = await self._all(select(s.jobs).where(s.jobs.c.task_id == task_id).order_by(s.jobs.c.id))
+        return [Job(**r) for r in rows]
+
+    async def queue_length(self) -> int:
+        """Jobs waiting to run, including ones backing off."""
+        async with self._engine.connect() as conn:
+            query = select(func.count()).where(s.jobs.c.status == "queued")
+            return int((await conn.execute(query)).scalar_one())
 
 
 # ---------------------------------------------------------------- outbox
@@ -340,6 +447,14 @@ class AuditRepo(_Repo):
                 )
             )
         return int(res.inserted_primary_key[0])  # type: ignore[index]
+
+    async def get(self, audit_id: int) -> dict[str, Any] | None:
+        return await self._one(select(s.audit_log).where(s.audit_log.c.id == audit_id))
+
+    async def for_action(self, action_id: str) -> list[dict[str, Any]]:
+        return await self._all(
+            select(s.audit_log).where(s.audit_log.c.action_id == action_id).order_by(s.audit_log.c.id)
+        )
 
     async def for_task(self, task_id: str) -> list[dict[str, Any]]:
         return await self._all(

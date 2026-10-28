@@ -67,7 +67,10 @@ tasks = Table(
     Column("affected_token", Text),
     Column("site", Text),
     Column("opened_at", UTCDateTime),
+    Column("assigned_at", UTCDateTime),
+    Column("email_received_at", UTCDateTime),
     Column("clock_started_at", UTCDateTime),
+    Column("clock_estimated", Boolean, nullable=False, server_default="0"),
     Column("clock_paused", Boolean, nullable=False, server_default="0"),
     Column("next_action", Text),
     Column("recipe", Text),
@@ -135,6 +138,26 @@ task_links = Table(
     Column("external_id", Text, nullable=False),
     PrimaryKeyConstraint("kind", "external_id"),
     Index(None, "task_id"),
+)
+
+clock_pauses = Table(
+    "clock_pauses",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    _task_fk(),
+    Column("started_at", UTCDateTime, nullable=False),
+    Column("ended_at", UTCDateTime),
+    Column("reason", Text, nullable=False),
+    Index(None, "task_id"),
+)
+
+clock_thresholds = Table(
+    "clock_thresholds",
+    metadata,
+    _task_fk(),
+    Column("hours", Integer, nullable=False),
+    Column("fired_at", UTCDateTime, nullable=False),
+    PrimaryKeyConstraint("task_id", "hours"),
 )
 
 action_requests = Table(

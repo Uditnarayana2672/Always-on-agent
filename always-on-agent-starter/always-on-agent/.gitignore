@@ -22,3 +22,7 @@ console/dist/
 
 # Local environment
 .env
+
+# coverage data
+.coverage
+htmlcov/

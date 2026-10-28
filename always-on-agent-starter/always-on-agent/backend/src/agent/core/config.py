@@ -121,7 +121,7 @@ class DataRuleConfig(_Model):
 
 
 class ClockConfig(_Model):
-    start: Literal["opened", "assigned"]
+    start: Literal["opened", "assigned", "email_received"]
     pause_on_hold: bool
     thresholds_hours: list[int]
 

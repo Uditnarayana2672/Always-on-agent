@@ -105,6 +105,23 @@ class FakeOutlook(FakeAdapter):
         self._record("send", draft_id=draft_id, idempotency_key=idempotency_key)
         self.sent.append(draft_id)
 
+    async def get_folder(self, message_id: str) -> str:
+        self._check("get_folder")
+        return self.folders[message_id]
+
+    async def discard_draft(self, draft_id: str) -> None:
+        """Delete a draft the agent created (the save_draft inverse); nothing else can be deleted."""
+        self._record("discard_draft", draft_id=draft_id)
+        self.drafts.pop(draft_id, None)
+
+    async def find_sent(self, idempotency_key: str) -> str | None:
+        """Sent Items lookup by the X-Agent-Idempotency header; the draft id if it was sent."""
+        self._check("find_sent")
+        for write in self.writes_to("send"):
+            if write.args.get("idempotency_key") == idempotency_key:
+                return str(write.args["draft_id"])
+        return None
+
     def tools(self) -> list[ToolSpec]:
         return [
             ToolSpec(name="read_mail", mode="silent", description="Read mail"),

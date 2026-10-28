@@ -10,9 +10,9 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 
 ## Current position
 
-- Phase: 0
-- Next prompt: 1.1
-- Last updated: 2026-10-28
+- Phase: 1
+- Next prompt: 1.5
+- Last updated: 2026-10-29
 
 ---
 
@@ -33,10 +33,10 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 
 | | Prompt | Features | Notes |
 | --- | --- | --- | --- |
-| [ ] | 1.1 Event intake and coordinator | F03 | |
-| [ ] | 1.2 Task ledger and state machine | F08 | |
-| [ ] | 1.3 Tool registry, policy gate, outbox, audit, undo | F06, F13 | |
-| [ ] | 1.4 Job queue and worker pool | F04 | |
+| [x] | 1.1 Event intake and coordinator | F03 | 2026-10-29: `runtime/coordinator.py`; dedupe, id/link/rule resolution, edits/deletes, F03 priorities + age boost; 34 tests |
+| [x] | 1.2 Task ledger and state machine | F08 | 2026-10-29: `ledger/` states, clocks, heartbeats, links; migration 0002; 72 tests |
+| [x] | 1.3 Tool registry, policy gate, outbox, audit, undo | F06, F13 | 2026-10-29: 45 gate cases; crash-recovery and undo tests; `agent.policy` coverage 99 % |
+| [x] | 1.4 Job queue and worker pool | F04 | 2026-10-29: `runtime/workers.py`; retry, poison, drain, TTL recovery, pool state; 10 tests |
 | [ ] | 1.5 LangGraph task graph and approvals | F07 | |
 | [ ] | 1.6 Scheduler, catch-up, quiet hours, controls | F02, F16 | |
 | [ ] | 1.7 Privacy layer | F11 | |
@@ -170,6 +170,25 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-28 | Outlook COM adapter (`adapters/outlook_com.py`) built ahead of 1.10 for mail and calendar | No app registration yet (Q3); user chose COM now, Graph later. Teams and Power BI reach the inbox as email notifications. Screen automation for Outlook/Teams ruled out |
 | 2026-10-28 | COM needs classic Outlook (`OUTLOOK.EXE`) running; new Outlook (`olk.exe`) has no COM | Laptop has both installed; doctor attaches only to a running classic Outlook and never starts it |
 | 2026-10-28 | Console loads prebuilt `@carbon/styles` CSS instead of Sass | Avoids adding a Sass dependency |
+| 2026-10-29 | Added `pytest-cov` 7.1.0 (dev) | Prompt 1.3 sets a 95 % coverage target on `agent.policy` |
+| 2026-10-29 | Age boost is +1 per minute waited, capped at priority 89, applied in `JobRepo.claim` SQL (`julianday`) | Starved digests still run, but age alone never beats approval resumes (90) or urgent clocks (100). Postgres needs `EXTRACT(EPOCH ...)` in Phase 3 |
+| 2026-10-29 | An event naming several task ids links its conversation/chat to none of them | `task_links` maps one external id to one task; a later reply must name its id rather than be guessed |
+| 2026-10-29 | `events.task_id` holds the first task; each task gets its own job with `event_id` in the payload | One-to-one column; jobs carry the fan-out |
+| 2026-10-29 | Teams edits are new events keyed `<id>#edit@<edited_at>`; deletes keyed `<id>#deleted`, stored without text, status `ignored` | Edits act once per edit; deleted text never reaches a job (E29) |
+| 2026-10-29 | Coordinator creates a `new` ledger entry the first time an INC/ENH/REF id is seen | Jobs need a task row; content only routes, never raises a mode |
+| 2026-10-29 | Clock start may be `email_received` (config); all three start times stored; missing start falls back and sets `clock_estimated` | F08 edge case: report time vs email time |
+| 2026-10-29 | Clock pauses are always recorded (`clock_pauses`); counted only when `pause_on_hold` is true | Q6 can be answered later without losing history |
+| 2026-10-29 | 24-hour clock is wall time, not work hours | KPI is 24 hours; weekends count unless paused |
+| 2026-10-29 | Only `Closed` (not `Resolved`) lets `source_system` close a task | Golden rule 10 names Closed |
+| 2026-10-29 | `reassigned_away` moves to `waiting` by the shortest legal path (needs_you -> in_progress -> waiting) | 4.2 has no direct needs_you -> waiting edge |
+| 2026-10-29 | Tool names matching delete/remove/password/credential/grant/ticket_state are always Hand off; the agent's own-draft inverse is `discard_own_draft` | Name rule catches unknown tools too |
+| 2026-10-29 | policy.yaml overrides a registration's mode; a tool's `mode_fn` applies only while policy has not made it stricter | Policy can only be tightened by code paths |
+| 2026-10-29 | Recipient rule: outside `company_domains` or not a participant/group/me -> Hand off; registered tools below Ask are only checked when they declare `recipients` | Saving a draft reaches no one; the send is checked |
+| 2026-10-29 | Outbox in `runtime/outbox.py`; it re-runs the gate at execution and blocks if the policy is now stricter, the content hash changed or the recipe is in shadow; pause -> `held` | F06 "policy edited while approvals pending" |
+| 2026-10-29 | After a crash an Ask action with no adapter lookup is failed as "check by hand", never re-sent | Exactly-once over at-least-once |
+| 2026-10-29 | Fakes gained `find_sent`, `get_folder`, `discard_draft` (Outlook) and `find_tagged` (Teams) | Real adapters must add the same in 1.10 and 1.12 |
+| 2026-10-29 | Retry: 2 attempts total (backoff 2 min); the 10 min step in `BACKOFF` is unused at `MAX_ATTEMPTS = 2` | Prompt says "fails twice then surfaces" |
+| 2026-10-29 | Jobs are finished only by the worker still holding them (`locked_by` check) | A late worker after TTL takeover cannot overwrite |
 
 ## Session log
 
@@ -183,3 +202,4 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-28 | 0.5 | Done: fixtures, adapter protocols, 9 fakes, FakeWorld, `run --fake`; 119 tests, ruff and mypy clean | Run 0.6 |
 | 2026-10-28 | 0.6 | Done: auth (MSAL + DPAPI cache), `agentd doctor`, `agentd signin`; 138 tests, ruff and mypy clean. Real run: ICA, network OK; Graph/Power BI/Slack waiting on access; Q11 answered | User: IT request, Slack app, laptop sleep |
 | 2026-10-28 | A01/A02 (early) | Outlook COM adapter + doctor check; 145 tests green. Live: Inbox 616 items, 45 today read OK; default calendar shows 0 items (sync or empty, to confirm). Teams and Power BI email notifications turned on | Confirm calendar in classic Outlook; run 1.1 |
+| 2026-10-29 | 1.1–1.4 | Done: coordinator, ledger, policy gate + outbox + undo, worker pool; 386 tests, ruff and mypy clean; policy coverage 99 % | Run 1.5 (LangGraph task graph and approvals) |
