@@ -247,6 +247,11 @@ class ApprovalService:
     async def pending(self) -> list[ActionRequest]:
         return await self._actions.with_statuses(OPEN)
 
+    async def card(self, action_id: str) -> tuple[ApprovalCard, str]:
+        """The card as it stands now and the request's status (Slack's Edit box shows this text)."""
+        action = await self._get(action_id)
+        return self._card(action), action.status
+
     # ------------------------------------------------------------ internals
 
     async def _get(self, action_id: str) -> ActionRequest:

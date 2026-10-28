@@ -114,6 +114,8 @@ class GraphConfig(_Model):
 class PowerBIConfig(_Model):
     scopes: list[str]
     refresh_cap_per_day: int = Field(ge=0)
+    watch: "PowerBIWatch" = Field(default_factory=lambda: PowerBIWatch())
+    owned_datasets: list[str] = Field(default_factory=list)  # yours: a single transient retry may be Report
 
 
 class DataRuleConfig(_Model):
@@ -179,6 +181,24 @@ class PrivacyConfig(_Model):
         return value
 
 
+class MailConfig(_Model):
+    backend: Literal["auto", "graph", "com"] = "auto"  # auto: Graph when an app registration is set
+    resync_days: int = Field(default=7, gt=0, le=30)  # full resync window after an expired delta token
+    # Sensitivity labels that still allow reading the body; any other label means metadata only.
+    open_labels: list[str] = Field(default_factory=lambda: ["Public", "General"])
+
+
+class TeamsConfig(_Model):
+    active_days: int = Field(default=14, gt=0)  # chats with activity in this window are polled
+    max_chats_per_poll: int = Field(default=50, gt=0)
+    self_note_verified: bool = False  # Q4: Graph can post to the user's own chat (48:notes)
+
+
+class PowerBIWatch(_Model):
+    datasets: list[str] = Field(default_factory=list)  # dataset ids polled for failures (R05)
+    stuck_after_minutes: int = Field(default=120, gt=0)
+
+
 class SlackConfig(_Model):
     user_id: str = ""  # the user's Slack member id (U...), for DMs
 
@@ -205,6 +225,8 @@ class Config(_Model):
     slack: SlackConfig = SlackConfig()
     privacy: PrivacyConfig = PrivacyConfig()
     me: list[str] = Field(default_factory=list)  # the user's own addresses and chat ids
+    mail: MailConfig = MailConfig()
+    teams: TeamsConfig = TeamsConfig()
 
 
 def load_config(path: Path | None = None) -> Config:

@@ -433,3 +433,17 @@ async def test_pause_aware_clock_from_ledger(engine: AsyncEngine, clock: FrozenC
     res = await coord.ingest(mail("P1", "RE: INC30109981 any news?"), "mail")
     job = await JobRepo(engine, clock).get(res.job_ids[0])
     assert job is not None and job.priority == PRIORITY_CALLER_REPLY
+
+
+async def test_users_own_teams_message_is_recognised_by_sender_id(
+    engine: AsyncEngine, clock: FrozenClock
+) -> None:
+    coordinator = make(engine, clock)
+    base = dict(
+        id="m1", chat_id="19:c", chat_topic=None, sender="Test User", sent_at=T0, text="Posted by the agent"
+    )
+    own = normalise(ChatMessage(**base, from_me=True), "teams")
+    other = normalise(
+        ChatMessage(**{**base, "sender": "Test User"}, from_me=False), "teams"
+    )  # same display name
+    assert coordinator.is_users_own(own) and not coordinator.is_users_own(other)

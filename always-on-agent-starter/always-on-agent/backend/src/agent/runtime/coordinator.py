@@ -219,6 +219,10 @@ def _from_mail(mail: MailMessage) -> Event:
             "cc": [p.address.lower() for p in mail.cc],
             "body": mail.body,
             "forwarded_from": original,
+            "folder": mail.folder,
+            # Protected mail arrives with an empty body; steps must not ask for its text (A01).
+            "metadata_only": mail.metadata_only,
+            "attachments": [a.name for a in mail.attachments],
         },
     )
 
@@ -230,6 +234,7 @@ def _from_teams(msg: ChatMessage) -> Event:
         "message_id": msg.id,
         "sender": msg.sender,
         "mentions_me": msg.mentions_me,
+        "from_me": msg.from_me,  # from Graph's sender id, never from the text
     }
     if msg.deleted:
         # Keep the fact it was deleted; drop the text so nothing can act on it.
@@ -379,6 +384,8 @@ class Coordinator:
         message sent from one of the user's addresses."""
         if event.source in ("slack", "api"):
             return True
+        if event.source == "teams" and event.payload.get("from_me") is True:
+            return True  # Teams senders are display names; the adapter matched the sender id
         sender = str(event.payload.get("sender") or "").strip().lower()
         return bool(sender) and sender in self._me
 

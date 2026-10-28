@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -41,6 +41,18 @@ class Items(list[Any]):
         pass
 
 
+def props() -> Obj:
+    """PropertyAccessor: named MAPI properties kept in a dict; unset ones raise like COM does."""
+    store: dict[str, Any] = {}
+
+    def get(path: str) -> Any:
+        if path not in store:
+            raise RuntimeError("property not found")
+        return store[path]
+
+    return Obj(GetProperty=get, SetProperty=lambda path, value: store.__setitem__(path, value), store=store)
+
+
 def local(y: int, mo: int, d: int, h: int, mi: int) -> datetime:
     """Wall-clock local time, the way Outlook returns it."""
     return datetime(y, mo, d, h, mi)
@@ -77,6 +89,7 @@ def mail(entry: str, conv: str, received: datetime, **extra: Any) -> Obj:
         "Categories": "ServiceNow, Doxis",
         "Importance": 2,
         "saved": saved,
+        "PropertyAccessor": props(),
     }
     attrs.update(extra)
     item = Obj(**attrs)
@@ -138,6 +151,7 @@ class FakeOutlook:
         folders = {
             6: Obj(Items=self.inbox, Parent=self.root),
             5: Obj(Items=self.sent),
+            4: Obj(Items=Items([])),
             9: Obj(Items=self.calendar),
         }
 
@@ -152,9 +166,15 @@ class FakeOutlook:
         return Obj(GetDefaultFolder=lambda i: folders[i], GetItemFromID=get_item)
 
     def CreateItem(self, kind: int) -> Obj:
-        item = Obj(EntryID=f"NEW{len(self.created)}", kind=kind)
+        item = Obj(EntryID=f"NEW{len(self.created)}", kind=kind, PropertyAccessor=props(), Sent=False)
+
+        def send() -> None:
+            item.sent = True
+            item.Sent = True
+            self.sent.append(item)
+
         item.Save = lambda: None
-        item.Send = lambda: setattr(item, "sent", True)
+        item.Send = send
         self.created.append(item)
         self.by_id[item.EntryID] = item
         return item
@@ -233,15 +253,48 @@ async def test_writes(adapter: OutlookComAdapter, outlook: FakeOutlook) -> None:
         "a@corp.example",
         "Re: access",
     )
-    await adapter.send(draft_id, "idem-1")
+    with pytest.raises(AdapterError, match="recipients changed"):
+        await adapter.send(draft_id, "idem-1", to=["someone.else@corp.example"], cc=["a@corp.example"])
+    assert await adapter.send(draft_id, "idem-1", to=["sophie.laurent@corp.example"], cc=["a@corp.example"])
     assert draft.sent is True
-    await adapter.send("GONE", "idem-2")  # already sent: no error
+    assert await adapter.find_sent("idem-1") == draft_id
+    # The draft is gone after sending: a retry finds it in Sent Items instead of sending again.
+    outlook.by_id.pop(draft_id)
+    assert await adapter.send(draft_id, "idem-1") == draft_id
+    with pytest.raises(AdapterError, match="nothing was sent"):
+        await adapter.send("GONE", "idem-2")  # never sent and gone: not reported as sent
 
-    hold_id = await adapter.add_hold(
-        "Focus", datetime(2026, 3, 25, 10, tzinfo=UTC), datetime(2026, 3, 25, 11, tzinfo=UTC)
-    )
+    edited = await adapter.create_draft(["sophie.laurent@corp.example"], "Re: x", "Original.")
+    outlook.by_id[edited].Body = "Changed by hand."
+    with pytest.raises(AdapterError, match="edited in Outlook"):
+        await adapter.send(edited, "idem-3")
+
+    start = datetime.now(UTC).replace(microsecond=0) + timedelta(days=1)
+    hold_id = await adapter.add_hold("Focus", start, start + timedelta(hours=1))
     hold = outlook.by_id[hold_id]
     assert hold.BusyStatus == oc.OL_BUSY_TENTATIVE and hold.Start.tzinfo is None
+    assert hold.Categories == "Agent hold"
+    with pytest.raises(AdapterError, match="end after"):
+        await adapter.add_hold("Focus", start, start)
+
+
+async def test_moving_to_deleted_items_is_refused(adapter: OutlookComAdapter) -> None:
+    with pytest.raises(AdapterError, match="hand-off"):
+        await adapter.move("E1", "Deleted Items")
+
+
+async def test_protected_mail_is_metadata_only(adapter: OutlookComAdapter, outlook: FakeOutlook) -> None:
+    outlook.inbox[0].Sensitivity = 3  # confidential
+    labelled = outlook.inbox[2]
+    labelled.PropertyAccessor.store[oc.LABELS_HEADER] = "MSIP_Label_x_Enabled=True;MSIP_Label_x_Name=Secret"
+    mails = await adapter.list_new(datetime(2026, 3, 25, tzinfo=UTC))
+    assert all(m.metadata_only and m.body == "" for m in mails)
+    labelled.PropertyAccessor.store[oc.LABELS_HEADER] = "MSIP_Label_y_Name=General"
+    assert not (await adapter.get_message("E2")).metadata_only
+
+
+def test_folder_path() -> None:
+    assert oc.folder_path("\\\\test.user@corp.example\\Inbox\\Done") == "Inbox/Done"
 
 
 async def test_com_failure_becomes_adapter_error_and_reconnects(outlook: FakeOutlook) -> None:

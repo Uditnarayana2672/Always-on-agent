@@ -46,7 +46,7 @@ async def test_undo_save_draft_discards_own_draft(engine: AsyncEngine, clock: Fr
     )
     assert res.audit_id is not None and res.result in env.world.mail.drafts
     assert (await env.undo.undo(res.audit_id)).status == "done"
-    assert env.world.mail.drafts == {}
+    assert res.result not in env.world.mail.drafts
     # Second time: already undone, not "draft is gone".
     assert (await env.undo.undo(res.audit_id)).status == "already_undone"
 

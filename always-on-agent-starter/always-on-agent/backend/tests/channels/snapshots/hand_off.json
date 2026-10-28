@@ -1,0 +1,34 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "REF-0412: hand-off",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "text": {
+        "text": "*Needs you:* refresh Inventory Health\nWhy: you lack permission on this dataset\nWho can help: priya.nair@corp.example",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "action_id": "open_console",
+          "text": {
+            "text": "Open in console",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "http://127.0.0.1:8765/#/tasks/REF-0412"
+        }
+      ],
+      "type": "actions"
+    }
+  ],
+  "text": "Needs you: refresh Inventory Health"
+}

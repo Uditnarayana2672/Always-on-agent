@@ -4,7 +4,8 @@ config/config.yaml
 *.db-shm
 *.db-wal
 logs/
-memory/
+# Personal memory at the repo root only; backend/src/agent/memory is code and must be committed
+/memory/
 fixtures/private/
 
 # Python

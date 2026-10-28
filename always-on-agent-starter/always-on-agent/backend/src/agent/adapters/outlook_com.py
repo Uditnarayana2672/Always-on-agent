@@ -17,7 +17,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from agent.adapters.base import Attachment, CalendarEvent, HealthStatus, MailMessage, Person, ToolSpec
+from agent.adapters.base import (
+    Attachment,
+    AttachmentInfo,
+    CalendarEvent,
+    HealthStatus,
+    MailMessage,
+    Person,
+    ToolSpec,
+)
+from agent.adapters.outlook_graph import digest_text, label_names
 from agent.core.errors import AdapterError
 
 log = logging.getLogger(__name__)
@@ -34,6 +43,15 @@ OL_BUSY_TENTATIVE = 1
 OL_RECIPIENT_TO, OL_RECIPIENT_CC = 1, 2
 PR_SMTP_ADDRESS = "http://schemas.microsoft.com/mapi/proptag/0x39FE001E"
 THREAD_SCAN_LIMIT = 500
+OL_FOLDER_OUTBOX = 4
+OL_FLAG_MARKED = 2
+_MAPI_STRING = "http://schemas.microsoft.com/mapi/string/"
+IDEMPOTENCY_HEADER = _MAPI_STRING + "{00020386-0000-0000-C000-000000000046}/X-Agent-Idempotency"
+AGENT_DRAFT = _MAPI_STRING + "{00020329-0000-0000-C000-000000000046}/AgentDraft"
+BODY_DIGEST = _MAPI_STRING + "{00020329-0000-0000-C000-000000000046}/AgentBodyDigest"
+TEXT_DIGEST = _MAPI_STRING + "{00020329-0000-0000-C000-000000000046}/AgentTextDigest"
+REPLY_TO = _MAPI_STRING + "{00020329-0000-0000-C000-000000000046}/AgentReplyTo"
+AGENT_HOLD = _MAPI_STRING + "{00020329-0000-0000-C000-000000000046}/AgentHold"
 _TEAMS_LINK = re.compile(r"https://teams\.microsoft\.com/l/meetup-join/[^\s>\"]+")
 _SHOW_AS = {0: "free", 1: "tentative", 2: "busy", 3: "oof", 4: "workingElsewhere"}
 
@@ -83,27 +101,63 @@ def smtp_of_recipient(recipient: Any) -> str:
         return str(recipient.Address or "")
 
 
+_SENSITIVITY = {0: "normal", 1: "personal", 2: "private", 3: "confidential"}
+LABELS_HEADER = _MAPI_STRING + "{00020386-0000-0000-C000-000000000046}/msip_labels"
+OPEN_LABELS = frozenset({"public", "general"})
+
+
+def is_protected(item: Any, sensitivity: str) -> bool:
+    """Private/confidential, encrypted (IRM, S/MIME) or carrying a non-open sensitivity label."""
+    if sensitivity in ("private", "confidential"):
+        return True
+    message_class = str(getattr(item, "MessageClass", "") or "")
+    if message_class.startswith(("IPM.Note.SMIME", "IPM.Note.rpmsg", "IPM.Note.Microsoft.Rpmsg")):
+        return True
+    try:
+        if int(getattr(item, "Permission", 0) or 0) != 0:  # IRM restricted
+            return True
+    except (TypeError, ValueError):
+        return True
+    names = label_names(_get_prop(item, LABELS_HEADER))
+    return any(n.lower() not in OPEN_LABELS for n in names)
+
+
 def to_mail(item: Any) -> MailMessage:
     to: list[Person] = []
     cc: list[Person] = []
     for recipient in item.Recipients:
-        person = Person(name=str(recipient.Name), address=smtp_of_recipient(recipient))
+        person = Person(name=str(recipient.Name), address=smtp_of_recipient(recipient).lower())
         (to if recipient.Type == OL_RECIPIENT_TO else cc if recipient.Type == OL_RECIPIENT_CC else []).append(
             person
         )
     categories = [c.strip() for c in str(item.Categories or "").split(",") if c.strip()]
+    sensitivity = _SENSITIVITY.get(int(getattr(item, "Sensitivity", 0) or 0), "normal")
+    protected = is_protected(item, sensitivity)
+    attachments = []
+    for att in item.Attachments:
+        name = str(getattr(att, "FileName", "") or "")
+        attachments.append(
+            AttachmentInfo(
+                name=name, content_type=_content_type(name), size=int(getattr(att, "Size", 0) or 0)
+            )
+        )
     return MailMessage(
         id=str(item.EntryID),
         conversation_id=str(item.ConversationID or item.EntryID),
         subject=str(item.Subject or ""),
-        sender=Person(name=str(item.SenderName or ""), address=smtp_of_sender(item)),
+        sender=Person(name=str(item.SenderName or ""), address=smtp_of_sender(item).lower()),
         to=to,
         cc=cc,
         received_at=com_time_to_utc(item.ReceivedTime),
-        body=str(item.Body or ""),
+        body="" if protected else str(item.Body or ""),
         has_attachments=item.Attachments.Count > 0,
         categories=categories,
         importance={0: "low", 1: "normal", 2: "high"}.get(int(item.Importance), "normal"),
+        flagged=int(getattr(item, "FlagStatus", 0) or 0) == OL_FLAG_MARKED,
+        is_draft=not bool(getattr(item, "Sent", True)),
+        attachments=attachments,
+        sensitivity=sensitivity,
+        metadata_only=protected,
     )
 
 
@@ -253,10 +307,56 @@ class OutlookComAdapter:
 
         return await self._run(read)
 
+    # -------------------------------------------------- more reads
+
+    async def get_message(self, message_id: str) -> MailMessage:
+        return await self._run(lambda: to_mail(self._item(message_id)))
+
+    async def search(self, query: str, top: int = 25) -> list[MailMessage]:
+        cleaned = query.replace("'", "''").replace('"', " ").strip()
+        if not cleaned:
+            return []
+
+        def read() -> list[MailMessage]:
+            flt = (
+                f"@SQL=\"urn:schemas:httpmail:subject\" ci_phrasematch '{cleaned}' OR "
+                f"\"urn:schemas:httpmail:textdescription\" ci_phrasematch '{cleaned}'"
+            )
+            items = self._ns().GetDefaultFolder(OL_FOLDER_INBOX).Items.Restrict(flt)
+            items.Sort("[ReceivedTime]", True)
+            out = []
+            for item in items:
+                if int(item.Class) == OL_CLASS_MAIL:
+                    out.append(to_mail(item))
+                if len(out) >= top:
+                    break
+            return out
+
+        return await self._run(read)
+
+    async def get_folder(self, message_id: str) -> str:
+        return await self._run(lambda: folder_path(str(self._item(message_id).Parent.FolderPath)))
+
+    async def get_categories(self, message_id: str) -> list[str]:
+        def read() -> list[str]:
+            raw = str(self._item(message_id).Categories or "")
+            return [c.strip() for c in raw.split(",") if c.strip()]
+
+        return await self._run(read)
+
+    async def is_flagged(self, message_id: str) -> bool:
+        return await self._run(lambda: int(self._item(message_id).FlagStatus or 0) == OL_FLAG_MARKED)
+
     # -------------------------------------------------- mail writes (only via the policy gate)
 
-    async def move(self, message_id: str, folder: str) -> None:
-        await self._run(lambda: self._item(message_id).Move(self._folder(folder)))
+    async def move(self, message_id: str, folder: str) -> str:
+        def write() -> str:
+            if folder.strip().lower().replace(" ", "") in ("deleteditems", "inbox/deleteditems"):
+                raise AdapterError("moving to Deleted Items is deleting; that is a hand-off")
+            moved = self._item(message_id).Move(self._folder(folder))
+            return str(getattr(moved, "EntryID", None) or message_id)
+
+        return await self._run(write)
 
     async def categorise(self, message_id: str, categories: list[str]) -> None:
         def write() -> None:
@@ -267,9 +367,18 @@ class OutlookComAdapter:
         await self._run(write)
 
     async def flag(self, message_id: str) -> None:
+        await self.set_flag(message_id, True)
+
+    async def unflag(self, message_id: str) -> None:
+        await self.set_flag(message_id, False)
+
+    async def set_flag(self, message_id: str, flagged: bool) -> None:
         def write() -> None:
             item = self._item(message_id)
-            item.MarkAsTask(0)  # olMarkToday
+            if flagged:
+                item.MarkAsTask(0)  # olMarkToday
+            else:
+                item.ClearTaskFlag()
             item.Save()
 
         await self._run(write)
@@ -289,26 +398,104 @@ class OutlookComAdapter:
                 draft.Body = body
             draft.To = "; ".join(to)
             draft.CC = "; ".join(cc or [])
+            _set_prop(draft, AGENT_DRAFT, "1")
+            _set_prop(draft, BODY_DIGEST, digest_text(str(draft.Body or "")))
+            _set_prop(draft, TEXT_DIGEST, digest_text(body))
+            _set_prop(draft, REPLY_TO, reply_to or "")
             draft.Save()
             return str(draft.EntryID)
 
         return await self._run(write)
 
-    async def send(self, draft_id: str, idempotency_key: str) -> None:
-        """Send a saved draft. If the draft no longer exists it was already sent; do nothing.
-
-        Exactly-once across restarts is the outbox's job (prompt 1.3); this guard covers a retry.
-        """
+    async def discard_draft(self, draft_id: str) -> None:
+        """The save_draft inverse: deletes only an unsent draft the agent created."""
 
         def write() -> None:
             try:
                 draft = self._item(draft_id)
             except Exception:
-                log.info("Draft already gone, treating as sent", extra={"idempotency_key": idempotency_key})
-                return
-            draft.Send()
+                return  # already gone
+            if getattr(draft, "Sent", False):
+                raise AdapterError("this message was sent; it cannot be discarded")
+            if _get_prop(draft, AGENT_DRAFT) != "1":
+                raise AdapterError("this draft was not created by the agent; it is left alone")
+            draft.Delete()
 
         await self._run(write)
+
+    async def send(
+        self,
+        draft_id: str,
+        idempotency_key: str,
+        to: list[str] | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        body: str | None = None,
+    ) -> str:
+        """Send a saved draft. A missing draft is only treated as sent when Sent Items shows it (E18)."""
+
+        def rebuild_needed() -> tuple[bool, str, str | None]:
+            try:
+                draft = self._item(draft_id)
+            except Exception:
+                return False, "", None
+            saved = _get_prop(draft, TEXT_DIGEST)
+            changed = bool(body) and saved is not None and saved != digest_text(body or "")
+            return changed, str(draft.Subject or ""), _get_prop(draft, REPLY_TO)
+
+        target = draft_id
+        changed, subject, reply_to = await self._run(rebuild_needed)
+        if changed and body:
+            target = await self.create_draft(to or [], subject, body, cc, reply_to or None)
+            await self.discard_draft(draft_id)
+
+        def write() -> str | None:
+            try:
+                draft = self._item(target)
+            except Exception:
+                return None
+            if getattr(draft, "Sent", False):
+                return None
+            if to is not None:
+                actual = _split(draft.To), _split(draft.CC)
+                approved = sorted(a.lower() for a in to), sorted(a.lower() for a in cc or [])
+                if actual != approved:
+                    raise AdapterError(
+                        "the draft's recipients changed in Outlook after approval; approve it again"
+                    )
+            expected = _get_prop(draft, BODY_DIGEST)
+            if expected and digest_text(str(draft.Body or "")) != expected:
+                raise AdapterError("the draft was edited in Outlook after approval; approve the new text")
+            _set_prop(draft, IDEMPOTENCY_HEADER, idempotency_key)
+            draft.Send()
+            return target
+
+        sent = await self._run(write)
+        if sent is not None:
+            return sent
+        found = await self.find_sent(idempotency_key)
+        if found is None:
+            raise AdapterError("the draft no longer exists and nothing was sent; make a new draft")
+        return found
+
+    async def find_sent(self, idempotency_key: str) -> str | None:
+        """Sent Items and the Outbox, newest first, by the X-Agent-Idempotency header property."""
+
+        def read() -> str | None:
+            for folder_id in (OL_FOLDER_SENT, OL_FOLDER_OUTBOX):
+                try:
+                    items = self._ns().GetDefaultFolder(folder_id).Items
+                except Exception:
+                    continue
+                items.Sort("[CreationTime]", True)
+                for index, item in enumerate(items):
+                    if index >= THREAD_SCAN_LIMIT:
+                        break
+                    if _get_prop(item, IDEMPOTENCY_HEADER) == idempotency_key:
+                        return str(item.EntryID)
+            return None
+
+        return await self._run(read)
 
     # -------------------------------------------------- calendar
 
@@ -321,8 +508,29 @@ class OutlookComAdapter:
 
         return await self._run(read)
 
-    async def add_hold(self, subject: str, start: datetime, end: datetime) -> str:
+    async def get_event(self, event_id: str) -> CalendarEvent | None:
+        def read() -> CalendarEvent | None:
+            try:
+                return to_event(self._item(event_id))
+            except AdapterError:
+                raise
+            except Exception:
+                return None
+
+        return await self._run(read)
+
+    async def add_hold(
+        self, subject: str, start: datetime, end: datetime, idempotency_key: str | None = None
+    ) -> str:
+        from agent.adapters.calendar import check_hold
+
+        check_hold(subject, start, end, datetime.now(UTC))
+
         def write() -> str:
+            if idempotency_key:
+                existing = self._find_hold(idempotency_key)
+                if existing is not None:
+                    return existing
             if self._app is None:
                 self._ns()
             item = self._app.CreateItem(OL_APPOINTMENT_ITEM)
@@ -331,10 +539,59 @@ class OutlookComAdapter:
             item.End = utc_to_com_local(end)
             item.BusyStatus = OL_BUSY_TENTATIVE
             item.ReminderSet = False
+            item.Categories = "Agent hold"
+            _set_prop(item, AGENT_HOLD, idempotency_key or "1")
             item.Save()
             return str(item.EntryID)
 
         return await self._run(write)
+
+    def _find_hold(self, key: str) -> str | None:
+        items = self._ns().GetDefaultFolder(OL_FOLDER_CALENDAR).Items
+        for item in items.Restrict("[Categories] = 'Agent hold'"):
+            if _get_prop(item, AGENT_HOLD) == key:
+                return str(item.EntryID)
+        return None
+
+    async def discard_hold(self, event_id: str) -> None:
+        """The add_hold inverse: removes only an agent hold nobody was invited to."""
+
+        def write() -> None:
+            try:
+                item = self._item(event_id)
+            except Exception:
+                return
+            if not _get_prop(item, AGENT_HOLD):
+                raise AdapterError("this event was not created by the agent; it is left alone")
+            if int(getattr(item.Recipients, "Count", 0) or 0) > 0:
+                raise AdapterError(
+                    "people were invited to this hold since; removing it would cancel their meeting"
+                )
+            item.Delete()
+
+        await self._run(write)
+
+
+def folder_path(raw: str) -> str:
+    """'\\\\user@corp.example\\Inbox\\Done' -> 'Inbox/Done'."""
+    parts = [p for p in raw.replace("/", "\\").split("\\") if p]
+    return "/".join(parts[1:]) if len(parts) > 1 else (parts[0] if parts else "")
+
+
+def _split(value: Any) -> list[str]:
+    return sorted(a.strip().lower() for a in str(value or "").split(";") if a.strip())
+
+
+def _get_prop(item: Any, path: str) -> str | None:
+    try:
+        value = item.PropertyAccessor.GetProperty(path)
+    except Exception:  # property not set
+        return None
+    return str(value) if value not in (None, "") else None
+
+
+def _set_prop(item: Any, path: str, value: str) -> None:
+    item.PropertyAccessor.SetProperty(path, value)
 
 
 def _content_type(name: str) -> str:

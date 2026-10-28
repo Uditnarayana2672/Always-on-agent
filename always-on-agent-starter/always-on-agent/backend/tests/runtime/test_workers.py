@@ -337,8 +337,9 @@ async def test_pool_state_shows_current_work(h: Harness) -> None:
         await pool.start()
 
     async def busy() -> bool:
+        # Wait for the step too: the worker shows the task a moment before the handler names its step.
         state = await pool.state()
-        return any(w.task_id for w in state.workers)
+        return any(w.task_id and w.step == "drafting reply" for w in state.workers)
 
     await until(busy)
     h.clock.advance(timedelta(seconds=42))

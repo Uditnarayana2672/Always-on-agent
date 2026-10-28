@@ -1,12 +1,29 @@
 """Fake Power BI REST (A05)."""
 
-import re
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-from agent.adapters.base import Dataflow, Group, PowerBILink, Refresh, ToolSpec
+from agent.adapters.base import (
+    Dataflow,
+    DataflowTransaction,
+    Group,
+    PowerBILink,
+    Refresh,
+    RefreshCap,
+    RefreshSchedule,
+    RefreshTrigger,
+    ReportCandidate,
+    ToolSpec,
+)
 from agent.adapters.fakes._base import FIXTURES_DIR, FakeAdapter, parse_time
+from agent.adapters.powerbi import (
+    RefreshRefused,
+    check_schedule,
+    count_on_utc_day,
+    parse_link,
+    utc_day_window,
+)
 from agent.core.clock import Clock
 from agent.core.errors import AdapterError
 from agent.core.ids import new_ulid
@@ -26,6 +43,9 @@ class FakePowerBI(FakeAdapter):
         self.apps: dict[str, dict[str, Any]] = {a["id"]: a for a in data["apps"]}
         self.dataflows: dict[str, dict[str, Any]] = {d["objectId"]: d for d in data["dataflows"]}
         self.refreshes: dict[str, list[dict[str, Any]]] = data["refreshes"]
+        self.schedules: dict[str, RefreshSchedule] = {}
+        self.forbidden: set[str] = set()  # datasets the user may not refresh (tests: 403)
+        self.cap_per_day = 8
 
     def deliver_refresh(self, dataset_id: str, raw: dict[str, Any]) -> None:
         """A refresh starts or finishes now (tests). Newest first, like the API."""
@@ -48,27 +68,67 @@ class FakePowerBI(FakeAdapter):
 
     async def resolve_link(self, url: str) -> PowerBILink:
         self._check("resolve_link")
-        group = re.search(rf"/groups/({_GUID})", url)
-        report = re.search(rf"/reports/({_GUID})", url)
-        app = re.search(rf"/apps/({_GUID})", url)
-        link = PowerBILink(group_id=group.group(1) if group else None)
-        if report and report.group(1) in self.reports:
-            link.report_id = report.group(1)
-            link.dataset_id = self.reports[link.report_id]["datasetId"]
-        if app and app.group(1) in self.apps:
-            link.app_id = app.group(1)
-            link.report_ids = list(self.apps[link.app_id]["reports"])
-        if not (link.report_id or link.app_id):
-            raise AdapterError(f"unknown Power BI link: {url[:120]}")
+        ids = parse_link(url)
+        link = PowerBILink(
+            group_id=ids.get("group"), app_id=ids.get("app"), dashboard_id=ids.get("dashboard")
+        )
+        if "dataset" in ids:
+            link.dataset_id = ids["dataset"]
+            return link
+        if "report" in ids:
+            report = self.reports.get(ids["report"])
+            if report is None:
+                raise AdapterError(f"powerbi: report not found: {ids['report']}", status_code=404)
+            link.report_id = ids["report"]
+            link.dataset_id = report["datasetId"]
+            link.report_ids = [ids["report"]]
+            link.candidates = [self._candidate(ids["report"])]
+            return link
+        if "app" in ids:
+            app = self.apps.get(ids["app"])
+            if app is None:
+                raise AdapterError(f"powerbi: app not found: {ids['app']}", status_code=404)
+            link.report_ids = list(app["reports"])
+            link.candidates = [self._candidate(r) for r in app["reports"]]
+        datasets = {c.dataset_id for c in link.candidates if c.dataset_id}
+        if len(datasets) == 1:
+            link.dataset_id = datasets.pop()
         return link
 
-    async def refresh_history(self, dataset_id: str, top: int = 10) -> list[Refresh]:
+    def _candidate(self, report_id: str) -> ReportCandidate:
+        report = self.reports[report_id]
+        return ReportCandidate(
+            report_id=report_id,
+            name=report["name"],
+            dataset_id=report["datasetId"],
+            group_id=report["groupId"],
+        )
+
+    async def refresh_history(self, dataset_id: str, top: int = 60) -> list[Refresh]:
         self._check("refresh_history")
         return [self._to_refresh(r) for r in self.refreshes.get(dataset_id, [])[:top]]
 
+    async def running_refresh(self, dataset_id: str) -> Refresh | None:
+        return next((r for r in await self.refresh_history(dataset_id, 5) if r.status == "Unknown"), None)
+
     async def refreshes_today(self, dataset_id: str, day: date) -> int:
-        self._check("refreshes_today")
-        return sum(1 for r in self.refreshes.get(dataset_id, []) if parse_time(r["startTime"]).date() == day)
+        """Refreshes that started on this UTC day (the service's day for the cap)."""
+        return count_on_utc_day(await self.refresh_history(dataset_id), day)
+
+    async def refresh_cap(self, dataset_id: str) -> RefreshCap:
+        day = self.clock.now_utc().date()
+        dedicated = {g.id: g.dedicated_capacity for g in await self.groups()}
+        group = self.datasets[dataset_id]["groupId"]
+        return RefreshCap(
+            used=await self.refreshes_today(dataset_id, day),
+            cap=None if dedicated.get(group) else self.cap_per_day,
+            day=day,
+            resets_at=utc_day_window(day)[1],
+        )
+
+    async def dataset_owner(self, dataset_id: str) -> str | None:
+        owner = self.datasets[dataset_id].get("configuredBy")
+        return str(owner).lower() if owner else None
 
     async def upstream_dataflows(self, dataset_id: str) -> list[Dataflow]:
         self._check("upstream_dataflows")
@@ -86,7 +146,46 @@ class FakePowerBI(FakeAdapter):
             )
         return out
 
-    async def trigger_refresh(self, dataset_id: str) -> str:
+    async def dataflow_transactions(self, dataflow_id: str, top: int = 10) -> list[DataflowTransaction]:
+        self._check("dataflow_transactions")
+        return [
+            DataflowTransaction(
+                id=t["id"],
+                status=t["status"],
+                start=parse_time(t["startTime"]) if t.get("startTime") else None,
+                end=parse_time(t["endTime"]) if t.get("endTime") else None,
+            )
+            for t in self.dataflows[dataflow_id]["transactions"][:top]
+        ]
+
+    async def refresh_schedule(self, dataset_id: str) -> RefreshSchedule:
+        self._check("refresh_schedule")
+        return self.schedules.get(dataset_id, RefreshSchedule(enabled=False))
+
+    async def trigger_refresh(self, dataset_id: str) -> RefreshTrigger:
+        """Same rules as the real adapter: no double refresh, the UTC-day cap, 403 hands off."""
+        dataset = self.datasets.get(dataset_id)
+        if dataset is None:
+            raise RefreshRefused("this dataset is not visible to you", kind="unknown_dataset")
+        if dataset.get("isRefreshable") is False:
+            raise RefreshRefused(
+                "this dataset cannot be refreshed; nothing to trigger", kind="not_refreshable"
+            )
+        running = await self.running_refresh(dataset_id)
+        if running is not None:
+            return RefreshTrigger(status="already_running", request_id=running.request_id)
+        cap = await self.refresh_cap(dataset_id)
+        if cap.at_cap:
+            raise RefreshRefused(f"all {cap.cap} refreshes for today are used", kind="cap")
+        if dataset_id in self.forbidden:
+            owner = await self.dataset_owner(dataset_id)
+            raise RefreshRefused(
+                "you do not have permission to refresh this dataset"
+                + (f"; its owner is {owner}" if owner else ""),
+                kind="forbidden",
+                owner=owner,
+                status_code=403,
+            )
         self._record("trigger_refresh", dataset_id=dataset_id)
         request_id = new_ulid()
         now = self.clock.now_utc().isoformat().replace("+00:00", "Z")
@@ -100,11 +199,28 @@ class FakePowerBI(FakeAdapter):
                 "endTime": None,
             },
         )
-        return request_id
+        return RefreshTrigger(
+            status="started",
+            request_id=request_id,
+            warning="this is the last refresh allowed today" if cap.last_one else None,
+        )
 
-    async def trigger_dataflow_refresh(self, dataflow_id: str) -> str:
+    async def trigger_dataflow_refresh(self, dataflow_id: str) -> RefreshTrigger:
+        latest = next(iter(await self.dataflow_transactions(dataflow_id, 1)), None)
+        if (
+            latest is not None
+            and latest.end is None
+            and latest.status.lower() in ("inprogress", "notstarted")
+        ):
+            return RefreshTrigger(status="already_running", request_id=latest.id)
         self._record("trigger_dataflow_refresh", dataflow_id=dataflow_id)
-        return new_ulid()
+        return RefreshTrigger(status="started", request_id=new_ulid())
+
+    async def update_refresh_schedule(self, dataset_id: str, schedule: RefreshSchedule) -> None:
+        dedicated = {g.id: g.dedicated_capacity for g in await self.groups()}
+        check_schedule(schedule, bool(dedicated.get(self.datasets[dataset_id]["groupId"])))
+        self._record("update_refresh_schedule", dataset_id=dataset_id, schedule=schedule.model_dump())
+        self.schedules[dataset_id] = schedule
 
     @staticmethod
     def _to_refresh(raw: dict[str, Any]) -> Refresh:
@@ -129,4 +245,5 @@ class FakePowerBI(FakeAdapter):
             ToolSpec(name="get_refresh_history", mode="silent", description="Read refresh history"),
             ToolSpec(name="trigger_refresh", mode="ask", description="Refresh a dataset"),
             ToolSpec(name="trigger_dataflow_refresh", mode="ask", description="Refresh a dataflow"),
+            ToolSpec(name="update_refresh_schedule", mode="ask", description="Change a refresh schedule"),
         ]

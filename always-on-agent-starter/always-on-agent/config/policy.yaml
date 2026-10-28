@@ -20,6 +20,9 @@ tools:
   save_draft: { mode: report }
   update_ledger: { mode: report }
   add_hold: { mode: report }
+  set_flag: { mode: report }               # undo of flag_mail
+  discard_own_draft: { mode: report }      # undo of save_draft: only unsent drafts the agent made
+  discard_own_hold: { mode: report }       # undo of add_hold: only agent holds nobody was invited to
   update_directory: { mode: report }
   write_memory: { mode: report }
   send_mail: { mode: ask }

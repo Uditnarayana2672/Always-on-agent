@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.10
+- Next prompt: 1.14 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
 - Last updated: 2026-10-29
 
 ---
@@ -42,10 +42,10 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [x] | 1.7 Privacy layer | F11 | 2026-10-29: pseudonymiser, leak check, restore, data-rule reducer, outbound checks; gateway uses `PrivacyLayer`; 46 tests incl. hypothesis |
 | [x] | 1.8 Memory and context builder | F09, F10 | 2026-10-29: `memory/` four tiers, budgeted packet with pointers and manifests, checked summary, ranked precedents, retention; migration 0004; 36 tests |
 | [x] | 1.9 Recipe engine | F12 | 2026-10-29: `recipes/` schema, safe loader with hot reload and pinned versions, read-only StepContext, shadow would-do, triggers, harness; 29 tests |
-| [ ] | 1.10 Outlook mail and calendar adapters | A01, A02 | |
-| [ ] | 1.11 Slack channel | A04, F14 | |
-| [ ] | 1.12 Teams adapter and notifications | A03, F14 | |
-| [ ] | 1.13 Power BI adapter | A05 | |
+| [!] | 1.10 Outlook mail and calendar adapters | A01, A02 | 2026-10-29: `adapters/outlook_graph.py`, `calendar.py`, COM parity, `adapters/tools.py`, `runtime/pollers.py`; respx + contract tests green. Needs you: doctor with the real account (blocked on Q3) |
+| [!] | 1.11 Slack channel | A04, F14 | 2026-10-29: `channels/slack_bot.py`, `cards.py`, `router.py`, `commands.py`, `email_self.py`; snapshot, compare-and-set, batching and fallback tests green. Needs you: `agentd run --fake --real-slack` (blocked on Q5) |
+| [!] | 1.12 Teams adapter and notifications | A03, F14 | 2026-10-29: `adapters/teams.py`, `channels/teams_notify.py`; respx + contract tests green. Needs you: doctor Teams read (blocked on Q3) |
+| [!] | 1.13 Power BI adapter | A05 | 2026-10-29: `adapters/powerbi.py` + refresh poller; link formats, UTC-day cap, running, 403 hand-off tests green. Needs you: doctor groups + one history (blocked on Q3/Q9) |
 | [ ] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | |
 | [ ] | 1.15 Console API | F15 | |
 | [ ] | 1.16 Console UI | F15 | |
@@ -115,6 +115,8 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | Q9 | Power BI capacity; Execute Queries allowed? | Unknown: needs Power BI sign-in (same app registration as Q3). Doctor reports dedicated vs shared workspaces once signed in | 2026-10-28 |
 | Q10 | SQL network route and read-only logins | | |
 | Q11 | Laptop lock and sleep timers | Display off and sleep after 5 min on AC, 3 min on battery; screen locks after 15 min by policy (`InactivityTimeoutSecs`). Sleep after 5 min stops the agent when idle | 2026-10-28 |
+| Q12 | Does Teams keep the hidden `agent:<hash>` span on posted chat messages? | Unknown: `find_tagged` falls back to "same text from you in the chat's latest 50"; check with the first real post after Q3 | |
+| Q13 | Power BI shared-capacity cap: confirm the day is counted in UTC | Assumed UTC (counts reset 05:30 IST), per the service's refresh limits; `refresh_cap()` reports `resets_at`. Verify with the first real cap refusal | |
 
 ## Blockers
 
@@ -125,6 +127,7 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-28 | Laptop sleeps after 5 min idle on AC (lock 15 min by policy) | Udit / IT | F01 always-on running; change sleep on AC to Never or ask IT |
 | 2026-10-28 | ICA Claude models all fail: `BedrockException Invalid Authentication` (ICA-side) | ICA support | 0.4 spike with Claude |
 | 2026-10-28 | Team frontier budget is 0 of 0 (resets 2 Nov). Of the "free" models only Gemma 4 answers; Llama 4 and Granite are rejected as frontier | Udit / team admin | Non-Gemma models |
+| 2026-10-29 | `backend/src/agent/memory/` (prompt 1.8) was never committed: `.gitignore` had `memory/`, which also matched it. Fresh checkouts fail `tests/recipes` and `agentd run`. `.gitignore` now ignores only the root `/memory/` | Udit: commit `backend/src/agent/memory/` and `backend/tests/memory/` from the laptop | 1.8 in git, recipe tests, `agentd run --fake` |
 | 2026-10-28 | ICA API key (new, ends d2ce) — check expiry on the ICA page | Udit | All model calls after it expires |
 
 ## Decisions
@@ -242,6 +245,34 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | Recipes without a task (scheduled) may not propose Ask tools | No task to park an approval on |
 | 2026-10-29 | `poll` triggers match intake events from that source; `every` is advisory (a load warning when faster than the poller) | Pollers are global (F02) |
 | 2026-10-29 | `creates_task` ids are the next free number for the prefix (`REF-0413`) | Natural ids per CLAUDE.md; concurrent creates of the same id would fail on the primary key (pollers ingest one at a time) |
+| 2026-10-29 | Added `aiohttp` 3.14.5 | `slack_bolt`'s async app and Socket Mode handler need it (Slack Bolt's own async extra) |
+| 2026-10-29 | One `GraphClient` for Graph and Power BI: silent token, one retry with a fresh token on 401, Retry-After (seconds or HTTP date, capped 120 s) on 429/503, backoff on 5xx, 4 attempts, typed `DeltaExpired`/`Forbidden`/`NotFound`, health reported on every call | A01–A05 share the same rules; tests inject sleep and clock |
+| 2026-10-29 | Mail uses immutable ids (`Prefer: IdType="ImmutableId"`) | A move keeps the id, so task links, undo and the outbox still find the message |
+| 2026-10-29 | Delta links and Teams cursors are committed only after every item was ingested; COM uses a received-time watermark read back with a 10-minute overlap | At-least-once reads + coordinator dedupe = exactly-once intake (E26) |
+| 2026-10-29 | Metadata-only mail: private/confidential sensitivity, a sensitivity label outside `mail.open_labels`, `message.rpmsg` or S/MIME. The body is blanked in the adapter; a label that cannot be read counts as labelled | Fail closed; nothing protected can reach the model (A01) |
+| 2026-10-29 | Agent drafts carry AgentDraft, AgentBodyDigest, AgentTextDigest and AgentReplyTo properties. `send` refuses changed recipients or a body edited in Outlook; an edit on the approval card rebuilds the draft with the approved text and discards the old one | The approval covers exactly what is sent (golden rule 2); an edited card must not send the old text |
+| 2026-10-29 | `X-Agent-Idempotency` is a named property in the internet-headers namespace, stamped at send and searched in Sent Items and the Outbox | Graph cannot add headers to an existing draft; this goes out as a header and is filterable (E18) |
+| 2026-10-29 | A missing draft is no longer "already sent" (COM did that): sent only if Sent Items has the key, else the send fails with "nothing was sent" | A deleted draft would have been reported as delivered |
+| 2026-10-29 | Undo tools `set_flag`, `discard_own_draft`, `discard_own_hold` (Report); the adapters refuse anything the agent did not create, anything sent, and holds someone was invited to. Moving to Deleted Items is refused (that is deleting) | Undo names must avoid delete/remove (always Hand off); only the agent's own unsent work is ever removed |
+| 2026-10-29 | `add_hold` args have no attendee field; holds are tentative, no reminder, category "Agent hold", max 8 h, not in the past; Graph `transactionId` = idempotency key | Own calendar only (A02); a retried create returns the same event |
+| 2026-10-29 | `read_calendar` leaves out private and cancelled events; the adapter returns private ones masked (no subject, organiser, link, categories) | "Private events skipped" while busy time stays known to the code |
+| 2026-10-29 | All-day events are read as midnight-to-midnight in the user's zone; non-UTC event zones go through a Windows-to-IANA map | Floating dates; meetings set in Zurich follow Europe's clock change |
+| 2026-10-29 | Teams: "edited" means `lastEditedDateTime` set; quiet chats are skipped unless their preview is newer than the cursor, with a sweep every 6th poll; system messages dropped | Reactions change `lastModifiedDateTime`; edits and deletes of old messages do not move the chat preview |
+| 2026-10-29 | `post_chat` needs `recipients` (every member but the user); the adapter refuses when the chat's real members are not all listed; members without an address become `external:<id>` | The gate's outside/stranger check must see the real audience (guests, people added later) |
+| 2026-10-29 | Teams messages from the user are recognised by `from_me` (sender id), not by display name | The agent's own posts and the user's replies must not cancel open approvals |
+| 2026-10-29 | `get_transcript` is registered at data level `chat`, and the adapter also checks the level and the `OnlineMeetingTranscript.Read.All` scope, returning a plain reason when unavailable | Defence in depth; E30 |
+| 2026-10-29 | Power BI cap counted per UTC day (Q13); dedicated capacity has no cap; the last refresh carries a warning; at the cap, 403, not refreshable or unknown dataset -> `RefreshRefused(kind=...)` with the owner on 403 | E32–E34; recipes turn `kind` into an alert or hand-off |
+| 2026-10-29 | `trigger_refresh` returns `RefreshTrigger` (`started` or `already_running` with the running request id) instead of a bare id | A running refresh is reported, never doubled (E32) |
+| 2026-10-29 | `trigger_refresh` mode_fn: Report only for a dataset in `owned_datasets`, a code in `TRANSIENT_REFRESH_ERRORS`, and no agent retry yet today; otherwise Ask. Fetched content still forces Ask | "A single retry" (prompt 1.13); facts come from code, never from text |
+| 2026-10-29 | `resolve_link` accepts *.powerbi.com/.de/.cn and powerbigov.us only; strips `<…>` and trailing punctuation; refuses `/links/` short links | Chat and Outlook wrap links; short links need a browser |
+| 2026-10-29 | Power BI poller emits `refresh` (finished after the watermark), `refresh_stuck` (running > `stuck_after_minutes`, once) and `dataflow_refresh` (failed upstream) events for `powerbi.watch.datasets` | Feeds R05; dedupe by request id and status |
+| 2026-10-29 | Slack cards escape &, <, >; never set `link_names`; a card whose text was cut has no Approve or Edit button; Edit only up to 3000 characters; button values carry action id + hash; expiry in the user's zone | Fetched text cannot ping @channel or hide links; nobody approves text they did not see |
+| 2026-10-29 | Only `slack.user_id` can click, edit, run `/agent` or have messages routed; bot messages and any message subtype are ignored; repeated deliveries of one click are dropped by id | Shared channels, our own acks, Socket Mode redelivery |
+| 2026-10-29 | Slack health: ok while connected, degraded when the socket drops, down after 2 minutes (watchdog every 15 s) | A04; the router skips a down channel |
+| 2026-10-29 | `NotificationRouter` is the Notifier's sink: primary, then Slack -> Teams self chat (only with `teams.self_note_verified`) -> email to self (first `me` address). A fallback message says so once per outage; if nothing delivers, `NotDelivered` and the push is not counted | F14, E31; nothing silently dropped |
+| 2026-10-29 | Notifications to the user (DMs, self chat, email to self) are channel sends, not tools: their recipient is fixed by config | They reach only the user; approvals still gate everything that reaches others |
+| 2026-10-29 | `agentd run --fake --real-slack` posts one test approval in the real DM against a temporary database and the fake Teams chat | Prompt 1.11 check without sending anything real |
+| 2026-10-29 | `test_pool_state_shows_current_work` waits for the step, not just the task | It raced on main too (the worker shows the task before the handler names its step) |
 
 ## Session log
 
@@ -258,3 +289,4 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | 1.1–1.4 | Done: coordinator, ledger, policy gate + outbox + undo, worker pool; 386 tests, ruff and mypy clean; policy coverage 99 % | Run 1.5 (LangGraph task graph and approvals) |
 | 2026-10-29 | 1.5–1.7 | Done: task graph + approvals, scheduler + controls + notifier, privacy layer; 492 tests, ruff and mypy clean; coverage policy 99–100 %, privacy 97–100 %, runtime (new) 96–97 %, graphs 90–94 %, approvals 89 %+ | Set `me` in config/config.yaml; run 1.8 |
 | 2026-10-29 | 1.8–1.9 | Done: memory and context builder, recipe engine; 558 tests, ruff and mypy clean; coverage memory 82–98 %, recipes 91–97 % | Run 1.10 (Outlook adapters); recipes R01–R06 in 1.14 use the harness |
+| 2026-10-29 | 1.10–1.13 | Code done: Graph mail + calendar, COM parity, Teams, Power BI, pollers, tool registrations, Slack bot + cards + router + commands, Teams self note, email to self; 631 tests pass (excluding `tests/recipes`, which needs the uncommitted `agent.memory`), ruff and mypy clean apart from that import. Real-account checks blocked on Q3/Q5 | Commit `agent/memory`; when IT and Slack say yes: `agentd signin`, `agentd doctor`, `agentd run --fake --real-slack` |

@@ -18,7 +18,11 @@ models:
   sonnet_for: [caller_drafts, long_transcripts, weekly_reports]
 ica: { base_url_env: ICA_BASE_URL, key_ref: "keyring:always-on-agent/ica" }
 graph: { tenant_id: "", client_id: "", scopes: [Mail.ReadWrite, Mail.Send, Calendars.ReadWrite, Chat.ReadWrite, Sites.Read.All] }
-powerbi: { scopes: [Dataset.ReadWrite.All, Dataflow.ReadWrite.All, Report.Read.All, Workspace.Read.All], refresh_cap_per_day: 8 }
+powerbi:
+  scopes: [Dataset.ReadWrite.All, Dataflow.ReadWrite.All, Report.Read.All, Workspace.Read.All]
+  refresh_cap_per_day: 8                # shared capacity; counted per UTC day like the service (05:30 IST reset)
+  watch: { datasets: [], stuck_after_minutes: 120 }   # dataset ids polled for failed or stuck refreshes (R05)
+  owned_datasets: []                    # yours: one retry after a known temporary error may run without asking
 data_rule: { level: metadata }           # metadata | text | chat | images
 company_domains: []
 allowed_groups: { doxis_l2: "" }
@@ -33,4 +37,6 @@ privacy:
   forbidden_phrases: [KPI, 24 hours, 24h, metric]   # never in caller-facing drafts; plurals and "24-hour" match too
   user_id_patterns: ['\b[a-zA-Z]\d{6}\b']           # extra user-id regexes; DOMAIN\user is always caught
   max_attachment_mb: 10
-me: []                                    # your own addresses: your messages never cancel pending approvals
+me: []                                    # your own addresses: your messages never cancel pending approvals; first one gets email-to-self
+mail: { backend: auto, resync_days: 7, open_labels: [Public, General] }   # auto: Graph once graph.client_id is set, else Outlook desktop
+teams: { active_days: 14, max_chats_per_poll: 50, self_note_verified: false }   # self_note_verified: Q4 answered yes

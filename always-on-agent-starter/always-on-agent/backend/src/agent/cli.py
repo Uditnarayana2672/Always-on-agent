@@ -25,7 +25,12 @@ def secret_set(name: str) -> None:
 
 
 @app.command()
-def run(fake: bool = typer.Option(False, "--fake", help="Use fake adapters and fixtures.")) -> None:
+def run(
+    fake: bool = typer.Option(False, "--fake", help="Use fake adapters and fixtures."),
+    real_slack: bool = typer.Option(
+        False, "--real-slack", help="With --fake: send one test approval card to your real Slack DM."
+    ),
+) -> None:
     """Run the agent."""
     from agent.core.config import get_config
     from agent.memory.personal import PersonalMemory
@@ -38,6 +43,10 @@ def run(fake: bool = typer.Option(False, "--fake", help="Use fake adapters and f
         return
     import asyncio
 
+    if real_slack:
+        _slack_check()
+        return
+
     from agent.adapters.fakes.world import FakeWorld
 
     # Fake mode builds only fakes: no Graph, Slack, Power BI or ICA client is created.
@@ -47,6 +56,26 @@ def run(fake: bool = typer.Option(False, "--fake", help="Use fake adapters and f
     typer.echo(
         f"fake world ready at {world.clock.now_local():%Y-%m-%d %H:%M %Z}; runtime not implemented yet"
     )
+
+
+def _slack_check() -> None:
+    import asyncio
+
+    from agent.channels.slack_check import run_slack_check
+    from agent.core.config import get_config
+    from agent.core.errors import AgentError
+    from agent.core.secrets import get_secret
+
+    config = get_config()
+    if not config.slack.user_id:
+        typer.echo("Set slack.user_id (your member id, U...) in config/config.yaml first.")
+        raise typer.Exit(1)
+    try:
+        bot_token, app_token = get_secret("slack_bot_token"), get_secret("slack_app_token")
+    except AgentError as exc:
+        typer.echo(f"{exc}. Run agentd secret set slack_bot_token and agentd secret set slack_app_token.")
+        raise typer.Exit(1) from exc
+    typer.echo(asyncio.run(run_slack_check(config, bot_token, app_token, echo=typer.echo)))
 
 
 @app.command()

@@ -1,0 +1,75 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "Today's digest",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "accessory": {
+        "action_id": "undo",
+        "text": {
+          "text": "Undo",
+          "type": "plain_text"
+        },
+        "type": "button",
+        "value": "{\"u\": 41}"
+      },
+      "text": {
+        "text": "Moved 3 ServiceNow notices to Done",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "accessory": {
+        "action_id": "undo",
+        "text": {
+          "text": "Undo",
+          "type": "plain_text"
+        },
+        "type": "button",
+        "value": "{\"u\": 42}"
+      },
+      "text": {
+        "text": "*INC30114872* Flagged a mail from your manager",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "text": {
+        "text": "Read the refresh history",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "text": "2 waiting for your approval · 1 only you can do · inbox-triage would have acted 5 time(s) (trial mode)",
+          "type": "mrkdwn"
+        }
+      ],
+      "type": "context"
+    },
+    {
+      "elements": [
+        {
+          "action_id": "open_console",
+          "text": {
+            "text": "Open console",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "http://127.0.0.1:8765/#/activity"
+        }
+      ],
+      "type": "actions"
+    }
+  ],
+  "text": "Today's digest"
+}

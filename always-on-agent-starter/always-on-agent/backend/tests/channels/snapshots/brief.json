@@ -1,0 +1,41 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "Wednesday 25 March",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "text": {
+        "text": "*Needs you*\n• INC30114872: reply to Sophie\n• REF-0412: refresh approved?",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "text": {
+        "text": "*Today*\n• 10:30 Sales Overview review",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "action_id": "open_console",
+          "text": {
+            "text": "Open console",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "http://127.0.0.1:8765/#/"
+        }
+      ],
+      "type": "actions"
+    }
+  ],
+  "text": "Wednesday 25 March"
+}

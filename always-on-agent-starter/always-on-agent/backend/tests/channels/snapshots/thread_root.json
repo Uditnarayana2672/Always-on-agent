@@ -1,0 +1,35 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "*INC30114872 – Login fails on site Basel*",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "text": "Replies in this thread go to INC30114872.",
+          "type": "mrkdwn"
+        }
+      ],
+      "type": "context"
+    },
+    {
+      "elements": [
+        {
+          "action_id": "open_console",
+          "text": {
+            "text": "Open in console",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "http://127.0.0.1:8765/#/tasks/INC30114872"
+        }
+      ],
+      "type": "actions"
+    }
+  ],
+  "text": "INC30114872 – Login fails on site Basel"
+}

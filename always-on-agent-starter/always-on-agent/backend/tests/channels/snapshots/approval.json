@@ -1,0 +1,73 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "INC30114872: Post this in the Teams chat",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "text": {
+        "text": "> Hello Sophie,\n> the login works again.",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "text": "Expires 26 Mar 04:30 UTC",
+          "type": "mrkdwn"
+        }
+      ],
+      "type": "context"
+    },
+    {
+      "block_id": "approval:01HACTION",
+      "elements": [
+        {
+          "action_id": "approval_approve",
+          "style": "primary",
+          "text": {
+            "text": "Approve",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "value": "{\"a\":\"01HACTION\",\"h\":\"abc123\"}"
+        },
+        {
+          "action_id": "approval_edit",
+          "text": {
+            "text": "Edit",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "value": "{\"a\":\"01HACTION\",\"h\":\"abc123\"}"
+        },
+        {
+          "action_id": "approval_reject",
+          "style": "danger",
+          "text": {
+            "text": "Reject",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "value": "{\"a\":\"01HACTION\",\"h\":\"abc123\"}"
+        },
+        {
+          "action_id": "open_console",
+          "text": {
+            "text": "Open in console",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "http://127.0.0.1:8765/#/approvals/01HACTION"
+        }
+      ],
+      "type": "actions"
+    }
+  ],
+  "text": "Approval needed: INC30114872: Post this in the Teams chat"
+}

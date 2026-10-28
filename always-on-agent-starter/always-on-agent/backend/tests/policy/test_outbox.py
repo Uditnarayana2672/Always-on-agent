@@ -24,6 +24,7 @@ MSG = "AAMkAGFAKE0011"  # an Inbox message in the fixtures
 class Env:
     def __init__(self, engine: AsyncEngine, clock: FrozenClock, registry: Registry | None = None) -> None:
         self.world = FakeWorld(clock)
+        self.world.mail.seed_draft("D1", [CALLER])
         self.registry = registry or t.build()
         self.gate = Gate(self.registry, t.COMPANY, t.GROUPS)
         self.actions = ActionRepo(engine, clock)

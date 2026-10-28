@@ -1,0 +1,26 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "Urgent: *INC30114872* The 24-hour clock is at 22 hours",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "action_id": "open_console",
+          "text": {
+            "text": "Open in console",
+            "type": "plain_text"
+          },
+          "type": "button",
+          "url": "http://127.0.0.1:8765/#/tasks/INC30114872"
+        }
+      ],
+      "type": "actions"
+    }
+  ],
+  "text": "Urgent: INC30114872: The 24-hour clock is at 22 hours"
+}

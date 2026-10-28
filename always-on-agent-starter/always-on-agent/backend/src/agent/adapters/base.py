@@ -48,6 +48,15 @@ class Attachment(BaseModel):
     data: bytes
 
 
+class AttachmentInfo(BaseModel):
+    """Attachment metadata only; the bytes are fetched on demand (get_attachments)."""
+
+    name: str
+    content_type: str
+    size: int = 0
+    inline: bool = False
+
+
 class MailMessage(BaseModel):
     id: str
     conversation_id: str
@@ -60,6 +69,22 @@ class MailMessage(BaseModel):
     has_attachments: bool = False
     categories: list[str] = Field(default_factory=list)
     importance: str = "normal"
+    folder: str = "Inbox"  # Inbox | SentItems | Drafts | a user folder path
+    flagged: bool = False
+    is_draft: bool = False
+    attachments: list[AttachmentInfo] = Field(default_factory=list)
+    sensitivity: str = "normal"  # normal | personal | private | confidential
+    # Labelled, encrypted or signed-and-sealed mail: body blanked, never sent to the model (A01).
+    metadata_only: bool = False
+
+
+class MailChanges(BaseModel):
+    """One delta poll of a folder. commit_token is stored only after every item was ingested."""
+
+    folder: str
+    messages: list[MailMessage]
+    commit_token: str | None
+    resynced: bool = False  # the old token had expired: a 7-day resync, duplicates are expected
 
 
 class CalendarEvent(BaseModel):
@@ -71,6 +96,12 @@ class CalendarEvent(BaseModel):
     show_as: str = "busy"
     organizer: Person | None = None
     join_url: str | None = None
+    all_day: bool = False
+    cancelled: bool = False
+    response: str | None = None  # accepted | tentativelyAccepted | declined | organizer | none
+    attendees: int = 0
+    categories: list[str] = Field(default_factory=list)
+    series_id: str | None = None  # occurrences and exceptions of one recurring meeting share it
 
 
 class ChatMessage(BaseModel):
@@ -83,6 +114,8 @@ class ChatMessage(BaseModel):
     deleted: bool = False
     text: str
     mentions_me: bool = False
+    sender_id: str | None = None
+    from_me: bool = False
 
 
 class SlackEvent(BaseModel):
@@ -95,12 +128,26 @@ class SlackEvent(BaseModel):
     at: datetime
 
 
+class ReportCandidate(BaseModel):
+    report_id: str
+    name: str
+    dataset_id: str | None
+    group_id: str | None = None
+
+
 class PowerBILink(BaseModel):
     group_id: str | None = None
     report_id: str | None = None
     app_id: str | None = None
+    dashboard_id: str | None = None
     dataset_id: str | None = None
     report_ids: list[str] = Field(default_factory=list)  # an app can bundle several reports
+    candidates: list[ReportCandidate] = Field(default_factory=list)
+
+    @property
+    def needs_choice(self) -> bool:
+        """An app or dashboard with several datasets behind it: list them and ask (A05)."""
+        return self.dataset_id is None and len({c.dataset_id for c in self.candidates}) > 1
 
 
 class Refresh(BaseModel):
@@ -117,6 +164,57 @@ class Dataflow(BaseModel):
     name: str
     last_status: str | None
     last_end: datetime | None
+
+
+class DataflowTransaction(BaseModel):
+    id: str
+    status: str  # InProgress | Success | Failed | Cancelled ...
+    refresh_type: str = ""
+    start: datetime | None = None
+    end: datetime | None = None
+
+
+class RefreshCap(BaseModel):
+    """Today's refreshes against the shared-capacity cap. The service counts per UTC day."""
+
+    used: int
+    cap: int | None  # None on dedicated capacity: no daily cap for API refreshes
+    day: date  # the UTC day counted
+    resets_at: datetime
+
+    @property
+    def remaining(self) -> int | None:
+        return None if self.cap is None else max(0, self.cap - self.used)
+
+    @property
+    def at_cap(self) -> bool:
+        return self.cap is not None and self.used >= self.cap
+
+    @property
+    def last_one(self) -> bool:
+        return self.cap is not None and self.used == self.cap - 1
+
+
+class RefreshTrigger(BaseModel):
+    """What trigger_refresh did. 'already_running' means no new refresh was started (E32)."""
+
+    status: Literal["started", "already_running"]
+    request_id: str | None
+    warning: str | None = None
+
+
+class RefreshSchedule(BaseModel):
+    enabled: bool
+    days: list[str] = Field(default_factory=list)
+    times: list[str] = Field(default_factory=list)  # HH:MM in local_time_zone
+    local_time_zone: str = "UTC"
+    notify_option: str = "MailOnFailure"
+
+
+class TranscriptResult(BaseModel):
+    available: bool
+    text: str = ""
+    reason: str = ""  # why not, in plain words
 
 
 class Group(BaseModel):
@@ -165,26 +263,47 @@ class OcrResult(BaseModel):
 
 class MailAdapter(Adapter, Protocol):
     async def list_new(self, since: datetime) -> list[MailMessage]: ...
+    async def get_message(self, message_id: str) -> MailMessage: ...
     async def get_thread(self, conversation_id: str) -> list[MailMessage]: ...
+    async def search(self, query: str, top: int = 25) -> list[MailMessage]: ...
     async def get_attachments(self, message_id: str) -> list[Attachment]: ...
-    async def move(self, message_id: str, folder: str) -> None: ...
+    async def get_folder(self, message_id: str) -> str: ...
+    async def move(self, message_id: str, folder: str) -> str: ...
     async def categorise(self, message_id: str, categories: list[str]) -> None: ...
     async def flag(self, message_id: str) -> None: ...
+    async def unflag(self, message_id: str) -> None: ...
     async def create_draft(
         self, to: list[str], subject: str, body: str, cc: list[str] | None = None, reply_to: str | None = None
     ) -> str: ...
-    async def send(self, draft_id: str, idempotency_key: str) -> None: ...
+    async def discard_draft(self, draft_id: str) -> None: ...
+    async def send(
+        self,
+        draft_id: str,
+        idempotency_key: str,
+        to: list[str] | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        body: str | None = None,
+    ) -> str: ...
+    async def find_sent(self, idempotency_key: str) -> str | None: ...
 
 
 class CalendarAdapter(Adapter, Protocol):
     async def events_between(self, start: datetime, end: datetime) -> list[CalendarEvent]: ...
-    async def add_hold(self, subject: str, start: datetime, end: datetime) -> str: ...
+    async def add_hold(
+        self, subject: str, start: datetime, end: datetime, idempotency_key: str | None = None
+    ) -> str: ...
+    async def get_event(self, event_id: str) -> CalendarEvent | None: ...
+    async def discard_hold(self, event_id: str) -> None: ...
 
 
 class TeamsAdapter(Adapter, Protocol):
     async def list_chat_messages(self, since: datetime) -> list[ChatMessage]: ...
-    async def post(self, chat_id: str, body: str, tag: str) -> str: ...
+    async def chat_members(self, chat_id: str) -> list[str]: ...
+    async def post(self, chat_id: str, body: str, tag: str, recipients: list[str] | None = None) -> str: ...
+    async def find_tagged(self, chat_id: str, tag: str) -> str | None: ...
     async def get_transcript(self, meeting_id: str) -> str | None: ...
+    async def transcript(self, meeting_id: str) -> TranscriptResult: ...
 
 
 class SlackAdapter(Adapter, Protocol):
@@ -196,11 +315,17 @@ class SlackAdapter(Adapter, Protocol):
 class PowerBIAdapter(Adapter, Protocol):
     async def groups(self) -> list[Group]: ...
     async def resolve_link(self, url: str) -> PowerBILink: ...
-    async def refresh_history(self, dataset_id: str, top: int = 10) -> list[Refresh]: ...
+    async def refresh_history(self, dataset_id: str, top: int = 60) -> list[Refresh]: ...
+    async def running_refresh(self, dataset_id: str) -> Refresh | None: ...
     async def refreshes_today(self, dataset_id: str, day: date) -> int: ...
+    async def refresh_cap(self, dataset_id: str) -> RefreshCap: ...
     async def upstream_dataflows(self, dataset_id: str) -> list[Dataflow]: ...
-    async def trigger_refresh(self, dataset_id: str) -> str: ...
-    async def trigger_dataflow_refresh(self, dataflow_id: str) -> str: ...
+    async def dataflow_transactions(self, dataflow_id: str, top: int = 10) -> list[DataflowTransaction]: ...
+    async def refresh_schedule(self, dataset_id: str) -> RefreshSchedule: ...
+    async def dataset_owner(self, dataset_id: str) -> str | None: ...
+    async def trigger_refresh(self, dataset_id: str) -> RefreshTrigger: ...
+    async def trigger_dataflow_refresh(self, dataflow_id: str) -> RefreshTrigger: ...
+    async def update_refresh_schedule(self, dataset_id: str, schedule: RefreshSchedule) -> None: ...
 
 
 class SharePointAdapter(Adapter, Protocol):

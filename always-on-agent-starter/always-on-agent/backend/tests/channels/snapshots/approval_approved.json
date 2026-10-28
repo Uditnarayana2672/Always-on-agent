@@ -1,0 +1,29 @@
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "INC30114872: Post this in the Teams chat",
+        "type": "plain_text"
+      },
+      "type": "header"
+    },
+    {
+      "text": {
+        "text": "> Hello Sophie,\n> the login works again.",
+        "type": "mrkdwn"
+      },
+      "type": "section"
+    },
+    {
+      "elements": [
+        {
+          "text": "*Approved*",
+          "type": "mrkdwn"
+        }
+      ],
+      "type": "context"
+    }
+  ],
+  "text": "Approved: INC30114872: Post this in the Teams chat"
+}

@@ -312,7 +312,10 @@ class Doctor:
             _ok(
                 "Power BI groups",
                 "powerbi",
-                f"{len(groups)} workspaces; {dedicated} dedicated capacity, {len(groups) - dedicated} shared",
+                f"{len(groups)} workspaces; {dedicated} dedicated capacity, {len(groups) - dedicated} shared"
+                + (
+                    f": {', '.join(sorted(str(g.get('name') or '?') for g in groups)[:10])}" if groups else ""
+                ),
             )
         ]
         for group in groups:
