@@ -1,0 +1,812 @@
+<title>Always-On Agent Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300;400;600&display=swap">
+<style>
+/* Layout: enterprise shell. Dark 48px header across the top, white side nav with a blue selected rail, square tiles on a white page. */
+:root {
+  --bg: #ffffff; --layer: #f4f4f4; --layer2: #ffffff; --accent-layer: #e0e0e0; --hover: #e8e8e8;
+  --line: #e0e0e0; --line-strong: #8d8d8d; --track: #c6c6c6;
+  --fg: #161616; --muted: #525252; --placeholder: #6f6f6f;
+  --link: #0f62fe; --interactive: #0f62fe; --interactive-hover: #0353e9; --on-interactive: #ffffff; --focus: #0f62fe;
+  --shell: #161616; --shell-fg: #f4f4f4; --shell-muted: #c6c6c6; --shell-line: #393939;
+  --nav-bg: #ffffff; --nav-selected: #e0e0e0;
+  --t-gray-bg: #e0e0e0; --t-gray-fg: #161616;
+  --t-blue-bg: #d0e2ff; --t-blue-fg: #0043ce;
+  --t-orange-bg: #ffd9be; --t-orange-fg: #8a3800;
+  --t-red-bg: #ffd7d9; --t-red-fg: #a2191f;
+  --t-green-bg: #a7f0ba; --t-green-fg: #0e6027;
+  --t-teal-bg: #9ef0f0; --t-teal-fg: #005d5d;
+  --success: #24a148; --error: #da1e28; --warning: #f1c21b; --warning-text: #8e6a00; --info: #0043ce;
+  --notice-warn-bg: #fcf4d6; --toast-bg: #393939; --toast-fg: #f4f4f4;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", Menlo, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161616; --layer: #262626; --layer2: #393939; --accent-layer: #393939; --hover: #333333;
+  --line: #393939; --line-strong: #6f6f6f; --track: #525252;
+  --fg: #f4f4f4; --muted: #c6c6c6; --placeholder: #a8a8a8;
+  --link: #78a9ff; --interactive: #0f62fe; --interactive-hover: #0353e9; --on-interactive: #ffffff; --focus: #ffffff;
+  --shell: #161616; --shell-fg: #f4f4f4; --shell-muted: #c6c6c6; --shell-line: #393939;
+  --nav-bg: #161616; --nav-selected: #393939;
+  --t-gray-bg: #525252; --t-gray-fg: #e0e0e0;
+  --t-blue-bg: #0043ce; --t-blue-fg: #d0e2ff;
+  --t-orange-bg: #8a3800; --t-orange-fg: #ffd9be;
+  --t-red-bg: #a2191f; --t-red-fg: #ffd7d9;
+  --t-green-bg: #0e6027; --t-green-fg: #a7f0ba;
+  --t-teal-bg: #005d5d; --t-teal-fg: #9ef0f0;
+  --success: #42be65; --error: #fa4d56; --warning: #f1c21b; --warning-text: #f1c21b; --info: #4589ff;
+  --notice-warn-bg: #393939; --toast-bg: #f4f4f4; --toast-fg: #161616;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #161616; --layer: #262626; --layer2: #393939; --accent-layer: #393939; --hover: #333333;
+  --line: #393939; --line-strong: #6f6f6f; --track: #525252;
+  --fg: #f4f4f4; --muted: #c6c6c6; --placeholder: #a8a8a8;
+  --link: #78a9ff; --interactive: #0f62fe; --interactive-hover: #0353e9; --on-interactive: #ffffff; --focus: #ffffff;
+  --shell: #161616; --shell-fg: #f4f4f4; --shell-muted: #c6c6c6; --shell-line: #393939;
+  --nav-bg: #161616; --nav-selected: #393939;
+  --t-gray-bg: #525252; --t-gray-fg: #e0e0e0;
+  --t-blue-bg: #0043ce; --t-blue-fg: #d0e2ff;
+  --t-orange-bg: #8a3800; --t-orange-fg: #ffd9be;
+  --t-red-bg: #a2191f; --t-red-fg: #ffd7d9;
+  --t-green-bg: #0e6027; --t-green-fg: #a7f0ba;
+  --t-teal-bg: #005d5d; --t-teal-fg: #9ef0f0;
+  --success: #42be65; --error: #fa4d56; --warning: #f1c21b; --warning-text: #f1c21b; --info: #4589ff;
+  --notice-warn-bg: #393939; --toast-bg: #f4f4f4; --toast-fg: #161616;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 20px; letter-spacing: .16px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 20; background: var(--shell); }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, select, input, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.muted { color: var(--muted); }
+
+/* shell header */
+.shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--shell); color: var(--shell-fg); border-bottom: 1px solid var(--shell-line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.shell-name { font-size: 14px; letter-spacing: .1px; white-space: nowrap; }
+.shell-name b { font-weight: 600; }
+.shell-sep { width: 1px; height: 24px; background: var(--shell-line); }
+.shell-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.shell-crumb { font-size: 14px; color: var(--shell-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--shell-muted); white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #42be65; flex: none; }
+.dot.paused { background: #f1c21b; }
+
+.app { display: grid; grid-template-columns: 256px minmax(0, 1fr); min-height: calc(100vh - 48px); }
+.side { position: sticky; top: calc(48px + env(safe-area-inset-top, 0px)); height: calc(100vh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); background: var(--nav-bg); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding-block: 16px 0; padding-left: env(safe-area-inset-left, 0px); overflow-y: auto; }
+nav { display: flex; flex-direction: column; }
+.nav-group { font-size: 12px; letter-spacing: .32px; color: var(--placeholder); padding: 16px 16px 6px; }
+.nav-group:first-child { padding-top: 0; }
+nav a { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 32px; padding: 0 16px; color: var(--muted); font-weight: 600; font-size: 14px; }
+nav a:hover { background: var(--hover); color: var(--fg); text-decoration: none; }
+nav a.active { background: var(--nav-selected); color: var(--fg); }
+nav a.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--interactive); }
+.count { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--error); color: #ffffff; text-align: center; line-height: 18px; font-weight: 400; }
+.count:empty { display: none; }
+.side-foot { margin-top: auto; padding: 16px; border-top: 1px solid var(--line); font-size: 12px; letter-spacing: .32px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+
+main { min-width: 0; padding-block: 32px 80px; padding-left: 32px; padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+.page { max-width: 1184px; display: flex; flex-direction: column; gap: 24px; }
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.eyebrow { font-size: 12px; letter-spacing: .32px; color: var(--muted); }
+h1 { font-weight: 400; font-size: 32px; line-height: 40px; letter-spacing: 0; margin: 4px 0 0; text-wrap: balance; }
+h2 { font-weight: 400; font-size: 20px; line-height: 28px; letter-spacing: 0; margin: 0; text-wrap: balance; }
+h3 { font-size: 16px; line-height: 24px; font-weight: 600; letter-spacing: 0; margin: 0; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 68ch; margin-top: 8px; font-size: 16px; line-height: 24px; letter-spacing: 0; }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: 1px solid var(--interactive); background: transparent; color: var(--link); border-radius: 0; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.btn:hover { background: var(--interactive); color: var(--on-interactive); text-decoration: none; }
+.btn.primary { background: var(--interactive); border-color: var(--interactive); color: var(--on-interactive); padding-right: 32px; }
+.btn.primary:hover { background: var(--interactive-hover); border-color: var(--interactive-hover); }
+.btn.ghost { border-color: transparent; color: var(--link); }
+.btn.ghost:hover { background: var(--hover); color: var(--link); }
+.btn.danger { border-color: var(--error); color: var(--error); }
+.btn.danger:hover { background: var(--error); color: #ffffff; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.spread { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+
+.panel { background: var(--layer); padding: 16px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+.mode, .pill { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 24px; font-size: 12px; letter-spacing: .32px; white-space: nowrap; }
+.mode.Silent, .pill.waiting { background: var(--t-gray-bg); color: var(--t-gray-fg); }
+.mode.Report, .pill.progress { background: var(--t-blue-bg); color: var(--t-blue-fg); }
+.mode.Ask, .pill.needs { background: var(--t-orange-bg); color: var(--t-orange-fg); }
+.mode.Handoff { background: var(--t-red-bg); color: var(--t-red-fg); }
+.pill.scheduled { background: var(--t-teal-bg); color: var(--t-teal-fg); }
+.pill.done { background: var(--t-green-bg); color: var(--t-green-fg); }
+.proj { font-size: 12px; letter-spacing: .32px; color: var(--muted); }
+.tag { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0; padding: 2px 8px; background: var(--layer2); white-space: nowrap; }
+
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: var(--notice-warn-bg); color: var(--fg); border-left: 3px solid var(--warning); padding: 12px 16px; }
+.strip { display: flex; flex-wrap: wrap; gap: 8px 32px; padding: 12px 16px; background: var(--layer); font-size: 14px; }
+.strip b { font-weight: 600; }
+
+.list { display: flex; flex-direction: column; }
+.item { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+.item.wide { grid-template-columns: auto minmax(0, 1fr) auto; }
+.item:first-child { border-top: 0; padding-top: 0; }
+.rank { font-family: var(--font-mono); color: var(--muted); font-size: 14px; letter-spacing: 0; }
+.item-title { font-weight: 600; }
+.item-title a { color: var(--fg); }
+.item-meta { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+.clock { display: grid; grid-template-columns: minmax(0, 1fr) 160px 56px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); color: var(--fg); }
+.clock:first-of-type { border-top: 0; }
+.clock:hover { text-decoration: none; }
+.clock:hover .clock-name { text-decoration: underline; }
+.clock-name { font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { position: relative; height: 8px; background: var(--track); overflow: hidden; }
+.bar > span { position: absolute; inset: 0 auto 0 0; background: var(--interactive); }
+.bar.warn > span { background: var(--warning); } .bar.crit > span { background: var(--error); }
+.bar i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--layer); }
+.age { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0; text-align: right; }
+.age.crit { color: var(--error); font-weight: 600; } .age.warn { color: var(--warning-text); font-weight: 600; }
+
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1px; background: var(--line); }
+.stat { background: var(--layer2); padding: 12px 16px; }
+.stat b { display: block; font-size: 28px; line-height: 36px; font-weight: 300; }
+.stat span { font-size: 12px; letter-spacing: .32px; color: var(--muted); }
+
+.board-wrap { overflow-x: auto; padding-bottom: 8px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 1fr); gap: 16px; min-width: min-content; }
+.col { background: var(--layer); padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 240px; }
+.col-head { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 8px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.card { display: flex; flex-direction: column; gap: 8px; background: var(--layer2); border: 1px solid transparent; padding: 12px 16px; color: var(--fg); }
+.card:hover { background: var(--hover); text-decoration: none; }
+.card:focus-visible { outline-offset: -2px; }
+.card-title { font-size: 14px; line-height: 20px; }
+.card .next { font-size: 12px; letter-spacing: .32px; color: var(--muted); }
+.empty { font-size: 12px; color: var(--muted); padding: 8px 4px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--line-strong); }
+.chip { border: 0; border-right: 1px solid var(--line-strong); background: transparent; padding: 0 16px; height: 40px; cursor: pointer; font-size: 14px; color: var(--muted); }
+.chip:last-child { border-right: 0; }
+.chip:hover { background: var(--hover); color: var(--fg); }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+
+.detail { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.thread { display: flex; flex-direction: column; }
+.ev { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.ev:first-child { border-top: 0; }
+.ev-time { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0; color: var(--muted); padding-top: 1px; }
+.ev-who { font-size: 12px; font-weight: 600; letter-spacing: .32px; }
+.ev-who.agent { color: var(--link); } .ev-who.you { color: var(--fg); } .ev-who.system { color: var(--muted); } .ev-who.caller { color: var(--t-orange-fg); }
+.ev-text { margin-top: 2px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.composer { display: flex; gap: 0; align-items: stretch; border-top: 1px solid var(--line); padding-top: 16px; }
+.composer textarea { flex: 1; min-width: 0; resize: vertical; min-height: 40px; border: 0; border-bottom: 1px solid var(--line-strong); background: var(--layer2); padding: 10px 16px; border-radius: 0; }
+.composer textarea::placeholder, input::placeholder, textarea::placeholder { color: var(--placeholder); }
+.kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 8px 12px; font-size: 14px; }
+.kv dt { color: var(--muted); font-size: 12px; letter-spacing: .32px; padding-top: 1px; } .kv dd { margin: 0; overflow-wrap: anywhere; }
+dl { margin: 0; }
+.facts { display: flex; flex-direction: column; gap: 8px; }
+.fact { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; font-size: 14px; }
+.fact-mark { width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 700; color: #ffffff; }
+.fact-mark.pass { background: var(--success); } .fact-mark.fail { background: var(--error); } .fact-mark.unknown { background: var(--line-strong); }
+.fact small { display: block; color: var(--muted); font-size: 12px; letter-spacing: .32px; }
+.summary { background: var(--layer2); padding: 12px 16px; font-size: 14px; }
+.prec { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+
+.approval { background: var(--layer); border-left: 3px solid var(--t-orange-fg); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.approval.edited { border-left-color: var(--info); }
+.panel .approval { background: var(--layer2); }
+.draft { background: var(--layer2); border-bottom: 1px solid var(--line-strong); padding: 12px 16px; white-space: pre-wrap; font-size: 14px; overflow-wrap: anywhere; max-height: 300px; overflow-y: auto; }
+.panel .approval .draft { background: var(--layer); }
+.draft-edit { width: 100%; min-height: 200px; border: 0; border-bottom: 1px solid var(--line-strong); outline: 2px solid var(--focus); outline-offset: -2px; background: var(--layer2); padding: 12px 16px; font-size: 14px; resize: vertical; border-radius: 0; }
+.note { font-size: 12px; letter-spacing: .32px; color: var(--muted); }
+.note.warn { color: var(--warning-text); font-weight: 600; }
+
+.table-wrap { overflow-x: auto; background: var(--layer); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-size: 14px; font-weight: 600; color: var(--fg); padding: 0 16px; height: 48px; background: var(--accent-layer); white-space: nowrap; }
+td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.panel .table-wrap { background: var(--layer2); }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--hover); }
+td.nowrap { white-space: nowrap; }
+tr.struck td { color: var(--muted); text-decoration: line-through; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--link); cursor: pointer; }
+.linkbtn:hover { text-decoration: underline; }
+
+.workers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--line); }
+.worker { padding: 12px 16px; background: var(--layer2); font-size: 14px; display: flex; flex-direction: column; gap: 4px; border-top: 3px solid transparent; }
+.worker b { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0; font-weight: 400; color: var(--muted); }
+.worker.busy { border-top-color: var(--interactive); }
+
+.form { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 16px 24px; align-items: start; }
+.form > label { font-size: 12px; letter-spacing: .32px; color: var(--muted); padding-top: 10px; }
+.form > label small { display: block; color: var(--placeholder); font-size: 12px; }
+.field, .form select, .form input[type="text"], .form input[type="number"], .form input[type="time"], .form textarea { width: 100%; min-height: 40px; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; background: var(--layer2); padding: 8px 16px; }
+.form textarea { min-height: 120px; resize: vertical; }
+select.field { padding-right: 32px; }
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 1px; background: var(--line); }
+.tool { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; background: var(--layer2); }
+.tool label { display: flex; align-items: center; gap: 8px; padding: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0; color: var(--fg); cursor: pointer; }
+input[type="checkbox"] { accent-color: var(--fg); width: 16px; height: 16px; }
+.yaml { font-family: var(--font-mono); font-size: 12px; line-height: 18px; letter-spacing: 0; background: var(--layer2); padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.editor { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.sticky { position: sticky; top: calc(48px + env(safe-area-inset-top, 0px) + 16px); }
+
+.tabs { display: flex; overflow-x: auto; }
+.tab { border: 0; border-bottom: 2px solid var(--line); background: none; padding: 11px 16px; cursor: pointer; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.tab:hover { color: var(--fg); border-bottom-color: var(--line-strong); }
+.tab[aria-selected="true"] { color: var(--fg); font-weight: 600; border-bottom-color: var(--interactive); }
+.memo { white-space: pre-wrap; font-size: 14px; background: var(--layer2); padding: 12px 16px; }
+.conn { display: flex; flex-direction: column; gap: 12px; }
+.conn ul { margin: 0; padding-left: 18px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.st { font-size: 12px; letter-spacing: .32px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.st::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.st.ok { color: var(--success); } .st.part { color: var(--info); } .st.pend { color: var(--warning-text); } .st.no { color: var(--muted); }
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: var(--t-red-bg); color: var(--t-red-fg); border-left: 3px solid var(--error); padding: 12px 16px; }
+
+.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--toast-bg); color: var(--toast-fg); border-left: 3px solid var(--info); padding: 14px 16px; font-size: 14px; max-width: min(420px, calc(100vw - 32px)); z-index: 30; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.typing { color: var(--muted); font-style: italic; font-size: 14px; }
+
+@media (max-width: 1056px) { .detail, .editor { grid-template-columns: minmax(0, 1fr); } .sticky { position: static; } .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  .app { display: block; }
+  .shell-crumb, .shell-sep { display: none; }
+  .side { position: sticky; top: calc(48px + env(safe-area-inset-top, 0px)); height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 0; z-index: 12; overflow: visible; }
+  nav { flex-direction: row; overflow-x: auto; padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: env(safe-area-inset-right, 0px); }
+  nav a { white-space: nowrap; height: 40px; }
+  nav a.active::before { top: auto; left: 0; right: 0; width: auto; height: 3px; }
+  .nav-group, .side-foot { display: none; }
+  main { padding-block: 24px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); }
+  .form { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .form > label { padding-top: 12px; }
+  h1 { font-size: 28px; line-height: 36px; }
+  .clock { grid-template-columns: minmax(0, 1fr) 90px 48px; }
+  .ev { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .status span:last-child { display: none; }
+}
+</style>
+
+<header class="shell">
+  <div class="shell-left"><span class="shell-name">Always-On <b>Agent</b></span><span class="shell-sep"></span><span class="shell-crumb">Doxis and Power BI support</span></div>
+  <span class="status"><span class="dot" id="statusDot"></span><span id="statusText">Running · Haiku</span></span>
+</header>
+<div class="app">
+  <aside class="side">
+    <nav id="nav" aria-label="Pages">
+      <span class="nav-group">Today</span>
+      <a href="#brief" data-route="brief">Morning brief</a>
+      <a href="#tasks" data-route="tasks">Tasks <span class="count" id="navTasks"></span></a>
+      <a href="#approvals" data-route="approvals">Approvals <span class="count" id="navApprovals"></span></a>
+      <span class="nav-group">How it works</span>
+      <a href="#recipes" data-route="recipes">Recipes</a>
+      <a href="#activity" data-route="activity">Activity</a>
+      <a href="#memory" data-route="memory">Memory</a>
+      <a href="#connectors" data-route="connectors">Connectors</a>
+      <a href="#prefs" data-route="prefs">Settings</a>
+    </nav>
+    <div class="side-foot">
+      <span>Phase 1 · on your laptop</span>
+      <span>Sample data, made up for this prototype</span>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const now = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const modeBadge = m => `<span class="mode ${m === 'Hand off' ? 'Handoff' : m}">${esc(m)}</span>`;
+const STATE = { needs: 'Needs you', progress: 'In progress', waiting: 'Waiting on others', scheduled: 'Scheduled', done: 'Done' };
+
+/* ---------- sample data ---------- */
+const S = { paused: false, projectFilter: 'All', modeFilter: 'All', memTab: 'personal', resetAsk: false, editing: null };
+
+S.tasks = [
+  { id: 'INC30109981', project: 'Doxis', title: 'PDF rendition missing for SOP-QA-0193', state: 'needs', ageH: 22.4, type: 'Rendition (L2 only)', caller: 'Jonas Weber', affected: 'Jonas Weber', site: 'ORB-02 · Orbe Product Development', priority: 'P2', next: 'Approve the escalation to Doxis L2', recipe: 'Incident intake and triage', approval: 'a2',
+    summary: 'The SOP was approved yesterday morning but no PDF rendition was generated. Renditions are handled by L2 only. The agent checked the document state and the rendition queue and drafted the escalation. The ticket crosses 24 hours at 10:36 today.',
+    facts: [['Document state', 'pass', 'Effective since 27 Oct 10:14 CET'], ['Rendition job in queue', 'fail', 'No job found for this document'], ['Other documents on site render', 'pass', '3 checked, all fine'], ['L2-only issue type', 'pass', 'Rendition → escalate']],
+    precedents: [['INC29911802', 'Rendition missing after approval; L2 re-queued the job; fixed in 2 h'], ['INC29702266', 'Rendition failed on a large Word file; L2 split the file']],
+    events: [['Tue 12:12', 'system', 'ServiceNow', 'Assignment email received. Ledger item created and the 24-hour clock started.'], ['Tue 12:15', 'agent', 'Agent', 'Triage: rendition issue, L2 only. Two precedents found. Missing facts: none.'], ['Tue 12:16', 'agent', 'Agent', 'Drafted the escalation email to the Doxis L2 group. Waiting for your approval.'], ['Wed 08:00', 'agent', 'Agent', 'Alert: this ticket passed 18 hours and is still waiting on your approval.']] },
+  { id: 'INC30114872', project: 'Doxis', title: 'Cannot see documents in project PX-4471', state: 'needs', ageH: 19.2, type: 'Access', caller: 'Anna Keller', affected: 'Tomás Rivera (raised on his behalf)', site: 'ORB-02 · Orbe Product Development', priority: 'P3', next: 'Approve the KM/LBA redirect', recipe: 'KM/LBA redirect and closure', approval: 'a1',
+    summary: 'Anna raised this for Tomás, who joined the PX-4471 team last week. Tomás is not a member of ORB-02, the project\'s leading site, so its documents are hidden by design. Only the site KM or LBA can add him. A redirect message is drafted and waiting for you.',
+    facts: [['Affected person identified', 'pass', 'Tomás Rivera, named in the description'], ['Member of leading site ORB-02', 'fail', 'Not in his site list (screenshot, 08:41)'], ['Project state', 'pass', 'Active, not closed'], ['TS/NP flag', 'pass', 'Not flagged'], ['CTMF category', 'unknown', 'Not visible in the screenshot']],
+    precedents: [['INC29874410', 'New team member could not see project documents; redirected to site LBA; closed same day'], ['INC29655021', 'On-behalf access request; KM added the user to the site'], ['INC29790135', 'Visibility lost after a site move; needed an L2 remap']],
+    events: [['Tue 13:52', 'system', 'ServiceNow', 'Assignment email received. Ledger item created and the 24-hour clock started.'], ['Tue 13:58', 'agent', 'Agent', 'Triage: access issue raised on behalf of Tomás Rivera (high confidence). Top precedent INC29874410. Missing fact: Tomás\'s site memberships.'], ['Tue 14:20', 'you', 'You', 'Approved and sent the first Teams message asking for a screenshot of Tomás\'s sites.'], ['Wed 08:41', 'caller', 'Anna Keller', 'Here is the screenshot of Tomás\'s sites.'], ['Wed 08:43', 'agent', 'Agent', 'Read the screenshot with local OCR. Tomás is not a member of ORB-02. Verdict: site access request, by design. Source: validated rights matrix.'], ['Wed 08:44', 'agent', 'Agent', 'Drafted the KM/LBA redirect for Anna and Tomás. Waiting for your approval.']] },
+  { id: 'INC30108754', project: 'Doxis', title: 'Request to obsolete an outdated stability protocol', state: 'needs', ageH: 15.3, type: 'Delete / obsolete', caller: 'Sophie Laurent', affected: 'Sophie Laurent', site: 'VRS-01 · Versoix Analytics', priority: 'P3', next: 'Approve the day-3 reminder', recipe: 'On Hold chaser', approval: 'a3',
+    summary: 'Obsoleting needs the site KM\'s approval, which Sophie was asked to request. No reply since yesterday afternoon. A second reminder is drafted for the 13:30 IST chase window.',
+    facts: [['Document is Effective', 'pass', 'Yes'], ['KM approval requested', 'unknown', 'Asked Sophie on Tue 17:05; no reply yet'], ['Out of office', 'pass', 'No auto-reply seen']],
+    precedents: [['INC29588120', 'Obsolete request; KM approved in workflow; closed after caller confirmed']],
+    events: [['Tue 17:40', 'system', 'ServiceNow', 'Assignment email received. Clock started.'], ['Tue 17:44', 'agent', 'Agent', 'Triage: obsolete request. The site KM must approve. Redirect drafted.'], ['Tue 18:05', 'you', 'You', 'Approved and sent the redirect. You set the ticket On Hold in ServiceNow.'], ['Wed 08:30', 'agent', 'Agent', 'No reply from Sophie. Drafted the next reminder for the 13:30 IST chase window.']] },
+  { id: 'REF-0412', project: 'Power BI', title: 'Refresh Global Cockpit (asked by Priya Nair)', state: 'needs', ageH: 0.4, type: 'Refresh request', caller: 'Priya Nair', affected: '—', site: 'Workspace: KPI Reporting (Prod)', priority: '—', next: 'Approve the refresh plan', recipe: 'Refresh on request', approval: 'a4',
+    summary: 'Priya posted the Global Cockpit app link in Teams and asked for a refresh. The source list changed at 08:20, after the 06:00 refresh, so a refresh is useful. Dataflow first, then the dataset.',
+    facts: [['Link resolved to a dataset', 'pass', 'Global Cockpit (dataset)'], ['Source changed since last refresh', 'pass', 'Site KPI history list, 08:20'], ['Refresh already running', 'pass', 'No'], ['Daily refresh cap', 'pass', '3 of 8 used today']],
+    precedents: [],
+    events: [['Wed 08:36', 'caller', 'Priya Nair', 'Can you refresh this please? https://app.powerbi.com/groups/…/apps/…'], ['Wed 08:37', 'agent', 'Agent', 'Refresh request detected. Resolved the link, checked history and source freshness. Plan ready for your approval.']] },
+  { id: 'ENH-014', project: 'Power BI', title: 'Add a site filter to the Pipeline Tracker overview', state: 'needs', ageH: 49, type: 'Enhancement', caller: 'Marc Dubois', affected: '—', site: 'Report: Pipeline Tracker', priority: '—', next: 'No reply for 2 working days: approve the acknowledgement', recipe: 'Enhancement request tracker', approval: 'a5',
+    summary: 'Marc asked for a site filter on the overview page. No reply from you yet. An acknowledgement is saved in your Outlook drafts.',
+    facts: [['Report found', 'pass', 'Pipeline Tracker (Prod)'], ['Duplicate of an open item', 'pass', 'No'], ['Deadline mentioned', 'unknown', 'Not stated']],
+    precedents: [],
+    events: [['Mon 10:05', 'system', 'Outlook', 'Email from Marc Dubois: "Could we add a site filter to the overview page?"'], ['Mon 10:09', 'agent', 'Agent', 'Logged as ENH-014 and saved an acknowledgement draft in Outlook.'], ['Wed 09:00', 'agent', 'Agent', 'Flagged in the morning brief: 2 working days without a reply.']] },
+  { id: 'INC30115230', project: 'Doxis', title: 'Workflow stuck at Quality Review step', state: 'progress', ageH: 6.1, type: 'Workflow', caller: 'Elena Rossi', affected: 'Elena Rossi', site: 'ORB-02 · Orbe Product Development', priority: 'P3', next: 'Caller replied at 08:52; re-analysing', recipe: 'Incident intake and triage', approval: null,
+    summary: 'The Quality Reviewer named on the workflow left the team. Elena answered the question about who should replace him; the agent is checking whether the KM must reassign the step.',
+    facts: [['Workflow state', 'pass', 'Quality Review, 4 days'], ['Reviewer still active', 'fail', 'Account disabled'], ['Replacement named', 'pass', 'Elena replied at 08:52']],
+    precedents: [['INC29932011', 'Reviewer left; KM reassigned the step; closed in 1 day']],
+    events: [['Wed 02:55', 'system', 'ServiceNow', 'Assignment email received. Clock started.'], ['Wed 03:01', 'agent', 'Agent', 'Triage: workflow issue. Asked who should take over the review step (approved earlier rule: questions only when evidence is missing).'], ['Wed 08:52', 'caller', 'Elena Rossi', 'Please assign it to Daniel Frei instead.'], ['Wed 08:53', 'agent', 'Agent', 'Reply classified: answered the question. Re-running the checks.']] },
+  { id: 'INC30117002', project: 'Doxis', title: 'Cannot upload files larger than 50 MB', state: 'progress', ageH: 0.6, type: 'Upload', caller: 'Karim Haddad', affected: 'Karim Haddad', site: 'SGP-03 · Singapore Quality', priority: 'P4', next: 'Precedent search running', recipe: 'Incident intake and triage', approval: null,
+    summary: 'New ticket. Translated from French. The agent is searching precedents.', facts: [['Language', 'pass', 'French, translated']], precedents: [],
+    events: [['Wed 08:24', 'system', 'ServiceNow', 'Assignment email received. Clock started.'], ['Wed 08:25', 'agent', 'Agent', 'Translated from French. Classified: upload. Searching precedents.']] },
+  { id: 'PBI-H03', project: 'Power BI', title: 'Forecast Hub results table: no new rows since Monday', state: 'progress', ageH: 2, type: 'Data freshness', caller: 'Refresh health check', affected: '—', site: 'Dataset: Forecast Hub', priority: '—', next: 'Check the SQL load job before anyone asks', recipe: 'Refresh health and freshness', approval: null,
+    summary: 'The dataset refreshes fine, but the source table has not grown since Monday. The SQL load job may have stopped.', facts: [['Dataset refresh', 'pass', 'Succeeded 06:10'], ['Source row growth', 'fail', '0 new rows since Mon']], precedents: [],
+    events: [['Wed 08:45', 'agent', 'Agent', 'Freshness check: results table has 0 new rows since Monday. Added to the morning brief.']] },
+  { id: 'PBI-SP10', project: 'Power BI', title: 'ISMS history list: 2 sites missing for October', state: 'waiting', ageH: 26, type: 'Completeness check', caller: 'SharePoint check', affected: '—', site: 'List: ISMS history', priority: '—', next: 'Waiting on site contacts; re-check daily', recipe: 'SharePoint history completeness', approval: null,
+    summary: '41 of 43 sites have entered October rows. Reminders went to the two missing site contacts yesterday.', facts: [['Sites present', 'unknown', '41 of 43 (AOA-SG4, EUR-OR7 missing)']], precedents: [],
+    events: [['Tue 09:00', 'agent', 'Agent', 'Completeness check: ISMS 41 of 43. Reminders drafted.'], ['Tue 09:40', 'you', 'You', 'Approved and sent both reminders.']] },
+  { id: 'ENH-015', project: 'Power BI', title: 'Show forecast accuracy by quarter in Forecast Hub', state: 'waiting', ageH: 70, type: 'Enhancement', caller: 'Lea Novak', affected: '—', site: 'Report: Forecast Hub', priority: '—', next: 'Waiting on Lea to confirm the measure', recipe: 'Enhancement request tracker', approval: null,
+    summary: 'You asked Lea which accuracy measure to use. Waiting for her answer.', facts: [], precedents: [],
+    events: [['Mon 15:20', 'system', 'Outlook', 'Email from Lea Novak with the request.'], ['Tue 18:40', 'you', 'You', 'Sent the acknowledgement and a question about the measure.']] },
+  { id: 'SCH-01', project: 'Power BI', title: 'Monthly SharePoint completeness check', state: 'scheduled', ageH: 0, type: 'Recurring', caller: '—', affected: '—', site: 'All history lists', priority: '—', next: 'Runs Mon 3 Nov, 09:00', recipe: 'SharePoint history completeness', approval: null, summary: 'Runs every month before the Global Cockpit refresh, then daily until complete.', facts: [], precedents: [], events: [] },
+  { id: 'SCH-02', project: 'Power BI', title: 'Friday enhancement digest', state: 'scheduled', ageH: 0, type: 'Recurring', caller: '—', affected: '—', site: 'Enhancement backlog', priority: '—', next: 'Runs Fri 31 Oct, 16:00', recipe: 'Enhancement request tracker', approval: null, summary: 'Status of open enhancement items by requester, sent only to you.', facts: [], precedents: [], events: [] },
+  { id: 'SCH-03', project: 'Doxis', title: 'Weekly KB candidates from closed tickets', state: 'scheduled', ageH: 0, type: 'Recurring', caller: '—', affected: '—', site: 'Closed tickets', priority: '—', next: 'Runs Fri 31 Oct, 15:00', recipe: 'Incident intake and triage', approval: null, summary: 'Lists closed tickets worth turning into a KB article.', facts: [], precedents: [], events: [] },
+  { id: 'INC30101345', project: 'Doxis', title: 'Export of native content denied', state: 'done', ageH: 0, type: 'Access', caller: 'Ben Oduya', affected: 'Ben Oduya', site: 'ORB-02', priority: 'P3', next: 'Closed yesterday · 9 h', recipe: 'KM/LBA redirect and closure', approval: null, summary: 'By design: export of native files needs the Author role. Redirected to the KM. Ben confirmed and you closed it. Saved as a precedent overnight.', facts: [], precedents: [], events: [['Tue 08:10', 'system', 'ServiceNow', 'Assignment email received.'], ['Tue 17:02', 'caller', 'Ben Oduya', 'Thanks, the KM added me. You can close it.'], ['Tue 17:10', 'you', 'You', 'Closed the ticket in ServiceNow.']] },
+];
+
+S.approvals = [
+  { id: 'a2', task: 'INC30109981', kind: 'Email', to: 'Doxis L2 support group', via: 'Outlook', recipe: 'Incident intake and triage', expires: 'Expires in 4 h', urgent: true,
+    text: 'Subject: INC30109981 – PDF rendition missing for SOP-QA-0193\n\nHi team,\n\nPlease take over this rendition issue. The SOP was approved on 27 Oct at 10:14 CET, but no PDF rendition was generated.\n\nChecks done:\n• Document state: Effective\n• Rendition queue: no job for this document\n• Three other documents on site ORB-02 render normally\n\nCaller: Jonas Weber, site ORB-02. Screenshots are attached to the ticket.\n\nThanks,\nUdit' },
+  { id: 'a1', task: 'INC30114872', kind: 'Teams message', to: 'Anna Keller, Tomás Rivera', via: 'Incident chat', recipe: 'KM/LBA redirect and closure', expires: 'Expires in 23 h',
+    text: 'Hi Anna, hi Tomás,\n\nThanks for the screenshot. Tomás isn\'t a member of site ORB-02 yet, which is the leading site for project PX-4471, so its documents stay hidden until he is added.\n\nSite access is granted by the site\'s Knowledge Manager or Local Business Administrator. Tomás can request it in Doxis: Access rights → + → search "ORB-02" → Create. The request goes to:\n• KM: Lena Schmid\n• LBA: Ravi Menon\n\nOnce the request is raised, may I close this ticket?\n\nThanks,\nUdit' },
+  { id: 'a4', task: 'REF-0412', kind: 'Power BI refresh', to: 'Global Cockpit (Prod)', via: 'Power BI', recipe: 'Refresh on request', expires: 'Expires in 1 h',
+    text: 'Plan:\n1. Refresh dataflow "Site KPI history" (last run 06:00; source changed 08:20)\n2. Then refresh dataset "Global Cockpit"\nRefreshes used today: 3 of 8\n\nReply to Priya in the same chat when done:\n"Refreshed at {time} IST; source data up to 08:20."' },
+  { id: 'a3', task: 'INC30108754', kind: 'Teams message', to: 'Sophie Laurent', via: 'Incident chat · sends at 13:30 IST', recipe: 'On Hold chaser', expires: 'Expires in 22 h',
+    text: 'Hi Sophie,\n\nFollowing up on the protocol you asked to obsolete. Could you let me know whether the site KM has approved the obsolete request? Once it is approved I can close this ticket.\n\nThanks,\nUdit' },
+  { id: 'a5', task: 'ENH-014', kind: 'Email (draft in Outlook)', to: 'Marc Dubois', via: 'Outlook', recipe: 'Enhancement request tracker', expires: 'Expires in 20 h',
+    text: 'Hi Marc,\n\nThanks for the request. I\'ve logged it as ENH-014: add a site filter to the Pipeline Tracker overview page. I\'ll come back with an estimate by Friday.\n\nBest,\nUdit' },
+];
+
+S.activity = [
+  ['08:58', 'Check-in', 'Polled Outlook, Teams and Power BI', 'read_mail, read_chat', 'Silent', '4 new items', false],
+  ['08:53', 'INC30115230', 'Classified Elena\'s reply as "answered the question"', 'read_chat', 'Silent', 'Re-analysis queued', false],
+  ['08:45', 'Refresh health', 'Computed durations and freshness for 14 datasets', 'get_refresh_history, sql_count', 'Silent', '1 slow, 1 stale', false],
+  ['08:44', 'INC30114872', 'Drafted the KM/LBA redirect', 'save_draft', 'Ask', 'Waiting for approval', false],
+  ['08:43', 'INC30114872', 'Read a screenshot with local OCR', 'ocr_local', 'Silent', '6 fields extracted', false],
+  ['08:37', 'REF-0412', 'Prepared a refresh plan for Global Cockpit', 'get_refresh_history', 'Ask', 'Waiting for approval', false],
+  ['08:30', 'Inbox triage', 'Moved 9 notification emails to Filed/Notifications', 'move_mail', 'Report', 'Done', true],
+  ['08:30', 'Inbox triage', 'Flagged 2 emails from your manager', 'flag_mail', 'Report', 'Done', true],
+  ['08:25', 'INC30117002', 'Created the ledger item and started the clock', 'update_ledger', 'Report', 'Done', true],
+  ['07:00', 'KPI watchdog', 'Matched the hourly ServiceNow report to the ledger', 'read_report_email', 'Silent', '7 open tickets, 0 unknown', false],
+  ['02:10', 'Nightly', 'Compressed INC30101345 into a precedent', 'write_memory', 'Report', 'Done', true],
+  ['Tue 18:40', 'ENH-015', 'Saved an acknowledgement draft in Outlook', 'save_draft', 'Report', 'Done', true],
+  ['Tue 17:05', 'INC30108754', 'Sent the day-1 reminder (you approved)', 'post_chat', 'Ask', 'Sent', false],
+  ['Tue 16:12', 'Policy gate', 'Stopped a reply to an address outside the company', 'send_mail', 'Hand off', 'Handed to you', false],
+  ['Tue 14:20', 'INC30114872', 'Sent the first Teams message (you approved)', 'post_chat', 'Ask', 'Sent', false],
+].map(a => ({ time: a[0], ref: a[1], action: a[2], tool: a[3], mode: a[4], result: a[5], undo: a[6], undone: false }));
+
+const TOOLS = [
+  ['read_mail', 'Silent'], ['search_mail', 'Silent'], ['read_report_email', 'Silent'], ['read_chat', 'Silent'], ['read_calendar', 'Silent'],
+  ['search_workbook', 'Silent'], ['ocr_local', 'Silent'], ['read_directory', 'Silent'], ['get_refresh_history', 'Silent'], ['read_sharepoint_list', 'Silent'], ['sql_count', 'Silent'],
+  ['move_mail', 'Report'], ['flag_mail', 'Report'], ['save_draft', 'Report'], ['update_ledger', 'Report'], ['add_hold', 'Report'],
+  ['send_mail', 'Ask'], ['post_chat', 'Ask'], ['trigger_refresh', 'Ask'], ['edit_shared_list', 'Ask'],
+  ['delete_item', 'Hand off'], ['change_ticket_state', 'Hand off'],
+];
+const toolMode = t => (TOOLS.find(x => x[0] === t) || [t, 'Ask'])[1];
+
+S.recipes = [
+  ['morning-brief', 'Morning brief', 'Core', 'Schedule · weekdays 09:00 IST', 'Haiku', 'Live', '09:00', ['read_mail', 'read_calendar', 'read_chat', 'get_refresh_history', 'update_ledger'], 'Rank what needs me today: replies owed, meetings, deadlines and alerts. Link every item to its source.', 'Main DM'],
+  ['inbox-triage', 'Inbox triage', 'Core', 'Poll · Outlook every 10 min', 'Haiku', 'Live', '08:30', ['read_mail', 'move_mail', 'flag_mail'], 'File notifications and FYIs. Flag mail from my manager and stakeholders. Never delete.', 'Nightly digest'],
+  ['draft-replies', 'Draft replies', 'Core', 'Event · mail that needs a reply', 'Sonnet', 'Live', '08:31', ['read_mail', 'save_draft', 'send_mail'], 'Draft replies in my style and save them as Outlook drafts. Sending always asks me.', 'Outlook drafts + approval card'],
+  ['mention-digest', 'Mention digest', 'Core', 'Each check-in', 'Haiku', 'Live', '08:58', ['read_chat'], 'List unanswered Slack and Teams mentions and DMs, oldest first.', 'Check-in message'],
+  ['refresh-watch', 'Refresh-failure watch', 'Core', 'Poll · Power BI every 10 min', 'Haiku', 'Live', '08:50', ['get_refresh_history', 'trigger_refresh'], 'Alert on failed or overrunning refreshes. Retry once only for known transient errors on datasets I own.', 'DM alert'],
+  ['nightly-digest', 'Nightly digest', 'Core', 'Schedule · 19:00 IST', 'Haiku', 'Live', 'Tue 19:00', ['update_ledger'], 'List everything done without asking today, each with an undo.', 'Main DM'],
+  ['doxis-triage', 'Incident intake and triage', 'Doxis', 'Poll · ServiceNow emails every 5 min', 'Haiku', 'Shadow', '08:25', ['read_mail', 'search_workbook', 'update_ledger', 'save_draft', 'post_chat', 'send_mail'], 'Parse the assignment email, pseudonymise names, translate, detect on-behalf requests, classify, search precedents, rank causes and draft only the questions the evidence cannot answer.', 'Task thread'],
+  ['kpi-watchdog', '24-hour KPI watchdog', 'Doxis', 'Schedule · every 10 min + hourly report', 'Haiku', 'Shadow', '08:50', ['read_report_email', 'update_ledger'], 'Track each open ticket\'s age. Note at 12 h, alert at 18 h, urgent at 22 h, with one next action. Block KPI wording in caller drafts.', 'DM alert + brief'],
+  ['access-check', 'Access investigation', 'Doxis', 'Event · access ticket or screenshot', 'Haiku', 'Shadow', '08:43', ['ocr_local', 'search_workbook', 'update_ledger', 'save_draft'], 'Check the affected person\'s site, role, project flags and CTMF category against the validated rights matrix. Say which source was used.', 'Verdict card'],
+  ['km-redirect', 'KM/LBA redirect and closure', 'Doxis', 'Event · step belongs to the site KM/LBA', 'Sonnet', 'Shadow', '08:44', ['read_directory', 'save_draft', 'post_chat', 'update_ledger'], 'Draft the redirect with the exact Doxis steps and the KM/LBA names. Ask the caller to close. No KPI wording.', 'Approval card'],
+  ['onhold-chaser', 'On Hold chaser', 'Doxis', 'Poll · replies every 10 min; chase at 13:30 IST', 'Haiku', 'Shadow', '08:30', ['read_chat', 'read_mail', 'save_draft', 'post_chat', 'update_ledger'], 'Classify replies. Draft reminders on day 1, 3 and 5. Treat only an explicit confirmation as fixed.', 'Approval card'],
+  ['pbi-refresh', 'Refresh on request', 'Power BI', 'Poll · Teams every 5 min for refresh asks', 'Haiku', 'Live', '08:37', ['read_chat', 'get_refresh_history', 'trigger_refresh', 'post_chat'], 'Find the dataset from the app link, check history, source freshness and the daily cap, and ask me before refreshing.', 'Approval card'],
+  ['pbi-health', 'Refresh health and freshness', 'Power BI', 'Schedule · 08:45 IST daily', 'Haiku', 'Live', '08:45', ['get_refresh_history', 'sql_count', 'read_sharepoint_list'], 'Compare today\'s durations with the 30-day median and check source row growth. Numbers come from code.', 'Brief section'],
+  ['pbi-sharepoint', 'SharePoint history completeness', 'Power BI', 'Schedule · monthly, then daily', 'Haiku', 'Live', 'Tue 09:00', ['read_sharepoint_list', 'save_draft', 'post_chat'], 'Check every expected site has a row in each history list for the period. Draft reminders for missing sites.', 'DM table'],
+  ['pbi-enhancements', 'Enhancement request tracker', 'Power BI', 'Poll · Outlook every 10 min', 'Haiku', 'Off', '—', ['read_mail', 'update_ledger', 'save_draft', 'send_mail'], 'Turn stakeholder enhancement emails into backlog items and draft acknowledgements. Needs the data rule for email text.', 'Backlog + drafts'],
+  ['pbi-intake', 'Teams and meeting intake', 'Power BI', 'Poll · chats every 10 min; 30 min after meetings', 'Haiku', 'Off', '—', ['read_chat', 'read_calendar', 'update_ledger'], 'Pull Power BI issues and my action items out of chats and transcripts. Needs the data rule for chat text.', 'DM list'],
+].map(r => ({ slug: r[0], name: r[1], project: r[2], trigger: r[3], model: r[4], status: r[5], last: r[6], tools: r[7], instructions: r[8], output: r[9] }));
+
+S.directory = [
+  ['ORB-02', 'Orbe Product Development', 'Lena Schmid', 'Ravi Menon', '12 Oct', 'Screenshot'],
+  ['VRS-01', 'Versoix Analytics', 'Marta Silva', 'Jan Kowalski', '02 Oct', 'Functional owner list'],
+  ['SGP-03', 'Singapore Quality', 'Mei Tan', 'Arjun Pillai', '18 Sep', 'Screenshot'],
+  ['MRS-04', 'Marysville Packaging', 'Grace Miller', '—', '04 Jun', 'Functional owner list'],
+  ['KON-01', 'Konolfingen Dairy R&D', 'Urs Baumann', 'Nina Graf', '21 Oct', 'Screenshot'],
+];
+S.lessons = [
+  { id: 'l1', text: 'For Doxis access tickets, check the affected person\'s sites before asking the caller anything.', from: 'You edited 3 drafts on INC30101345 and INC30098812 the same way', state: 'proposed' },
+  { id: 'l2', text: 'Never cc the Doxis L2 group on the first message to a caller.', from: 'You removed the cc on 2 approvals', state: 'proposed' },
+  { id: 'l3', text: 'Sign caller messages "Thanks, Udit", not "Best regards".', from: 'You changed the sign-off on 4 drafts', state: 'proposed' },
+  { id: 'l4', text: 'Refresh requests from Priya Nair are always for Global Cockpit (Prod).', from: 'Approved 14 Oct', state: 'approved' },
+  { id: 'l5', text: 'Send chase reminders only inside the 13:30–21:30 IST window.', from: 'Approved 20 Oct', state: 'approved' },
+];
+
+/* ---------- helpers ---------- */
+const task = id => S.tasks.find(t => t.id === id);
+const ageClass = h => h >= 22 ? 'crit' : h >= 12 ? 'warn' : '';
+const fmtAge = h => h < 1 ? Math.round(h * 60) + 'm' : h < 48 ? h.toFixed(1) + 'h' : Math.round(h / 24) + 'd';
+const taskHref = t => '#task-' + t.id.toLowerCase();
+const isDoxisOpen = t => t.project === 'Doxis' && !['done', 'scheduled'].includes(t.state);
+let toastTimer;
+function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3200); }
+function log(ref, action, tool, mode, result, undo = false) { S.activity.unshift({ time: now(), ref, action, tool, mode, result, undo, undone: false }); }
+function addEvent(t, who, name, text) { t.events.push(['Wed ' + now(), who, name, text]); }
+
+function updateChrome() {
+  document.getElementById('navApprovals').textContent = S.approvals.length || '';
+  const needs = S.tasks.filter(t => t.state === 'needs').length;
+  document.getElementById('navTasks').textContent = needs || '';
+  document.getElementById('statusDot').classList.toggle('paused', S.paused);
+  document.getElementById('statusText').textContent = S.paused ? 'Paused · nothing runs' : 'Running · Haiku';
+}
+const pausedBanner = () => S.paused ? `<div class="banner"><span><b>The agent is paused.</b> No check-ins, schedules or pending actions will run until you resume.</span><button class="btn" data-action="toggle-pause">Resume</button></div>` : '';
+
+/* ---------- pages ---------- */
+function pageBrief() {
+  const needs = S.tasks.filter(t => t.state === 'needs').sort((a, b) => (b.project === 'Doxis' ? b.ageH : 0) - (a.project === 'Doxis' ? a.ageH : 0));
+  const reasons = { 'INC30109981': 'Crosses 24 hours at 10:36. Escalation to L2 is drafted.', 'INC30114872': 'At 19 h. The redirect to the site KM/LBA is drafted.', 'REF-0412': 'Priya asked 25 minutes ago. Source changed after the last refresh.', 'INC30108754': 'No reply since yesterday. Reminder ready for 13:30 IST.', 'ENH-014': 'Marc has waited 2 working days for a reply.' };
+  const clocks = S.tasks.filter(isDoxisOpen).sort((a, b) => b.ageH - a.ageH);
+  const overnight = S.activity.filter(a => a.mode === 'Report');
+  return `<div class="page">
+    ${pausedBanner()}
+    <div class="page-head">
+      <div><div class="eyebrow">Wed 28 Oct · 09:00 IST brief</div><h1>Good morning, Udit. ${needs.length} things need you.</h1>
+      <p class="lede">The agent read your mail, Teams chats, the ServiceNow report and Power BI overnight. Everything below links to its source.</p></div>
+      <div class="row"><button class="btn" data-action="checkin">Run a check-in now</button><button class="btn ghost" data-action="toggle-pause">${S.paused ? 'Resume agent' : 'Pause agent'}</button></div>
+    </div>
+    <div class="strip"><span>Last check-in <b class="mono">08:58</b></span><span>Next <b class="mono">11:00</b></span><span>Open tasks <b class="mono">${S.tasks.filter(t => !['done', 'scheduled'].includes(t.state)).length}</b></span><span>Approvals waiting <b class="mono">${S.approvals.length}</b></span><span>Model <b>Haiku</b>, Sonnet for caller drafts</span></div>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Needs you now</h2><a href="#approvals" class="note">Open the approvals queue</a></div>
+      <div class="list">${needs.length ? needs.map((t, i) => `<div class="item"><span class="rank">${i + 1}</span><div><div class="item-title"><a href="${taskHref(t)}"><span class="mono">${t.id}</span> · ${esc(t.title)}</a></div><div class="item-meta">${esc(reasons[t.id] || t.next)}</div></div><span class="proj">${t.project}</span></div>`).join('') : '<p class="muted">Nothing needs you right now.</p>'}</div>
+    </section>
+
+    <div class="grid2">
+      <section class="panel">
+        <div class="panel-head"><h2>Doxis 24-hour clock</h2><span class="note">Ticks at 12, 18 and 22 h</span></div>
+        <div>${clocks.map(t => `<a class="clock" href="${taskHref(t)}"><span class="clock-name"><span class="mono">${t.id}</span> ${esc(t.title)}</span><span class="bar ${ageClass(t.ageH)}"><span style="width:${Math.min(t.ageH / 24, 1) * 100}%"></span><i style="left:50%"></i><i style="left:75%"></i><i style="left:91.7%"></i></span><span class="age ${ageClass(t.ageH)}">${fmtAge(t.ageH)}</span></a>`).join('')}</div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Power BI</h2><span class="note">From the 08:45 health check</span></div>
+        <div class="stat-row"><div class="stat"><b>13 / 14</b><span>datasets normal</span></div><div class="stat"><b>41 / 43</b><span>ISMS sites in</span></div><div class="stat"><b>2</b><span>enhancements waiting</span></div></div>
+        <div class="list">
+          <div class="item"><span class="rank">!</span><div><div class="item-title"><a href="#task-pbi-h03">Forecast Hub results table has no new rows since Monday</a></div><div class="item-meta">Dataset refresh succeeded, so the SQL load job is the likely cause.</div></div><span></span></div>
+          <div class="item"><span class="rank">·</span><div><div class="item-title">Pipeline Tracker refresh took 42 min</div><div class="item-meta">The 30-day median is 18 min. No action needed yet.</div></div><span></span></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="grid2">
+      <section class="panel">
+        <div class="panel-head"><h2>Done on its own since yesterday</h2><a href="#activity" class="note">Full activity log</a></div>
+        <div class="list">${overnight.slice(0, 5).map(a => `<div class="item wide"><span>${modeBadge('Report')}</span><div><div class="${a.undone ? 'muted' : ''}">${esc(a.action)}${a.undone ? ' · undone' : ''}</div><div class="item-meta"><span class="mono">${esc(a.time)}</span> · ${esc(a.ref)}</div></div>${a.undo && !a.undone ? `<button class="btn ghost" data-action="undo" data-i="${S.activity.indexOf(a)}">Undo</button>` : '<span></span>'}</div>`).join('')}</div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Today's meetings</h2><span class="note">Prep briefs 30 min before</span></div>
+        <div class="list">
+          <div class="item wide"><span class="rank mono">11:30</span><div><div class="item-title">Doxis support weekly</div><div class="item-meta">Prep ready: 7 open tickets, 1 likely platform issue (2 rendition tickets this week)</div></div><button class="btn ghost" data-action="prep">Open prep</button></div>
+          <div class="item wide"><span class="rank mono">15:00</span><div><div class="item-title">Pipeline Tracker review with Marc</div><div class="item-meta">ENH-014 is unanswered. Approve the reply before this meeting.</div></div><a class="btn ghost" href="#task-enh-014">Open task</a></div>
+        </div>
+      </section>
+    </div>
+  </div>`;
+}
+
+function pageTasks() {
+  const f = S.projectFilter;
+  const list = S.tasks.filter(t => f === 'All' || t.project === f);
+  const cols = ['needs', 'progress', 'waiting', 'scheduled', 'done'];
+  return `<div class="page" style="max-width:none">
+    ${pausedBanner()}
+    <div class="page-head"><div><div class="eyebrow">One thread per ticket or request</div><h1>Tasks</h1><p class="lede">Each card is a task with its own memory and thread. A short-lived worker picks it up whenever something happens on it. Only you can mark a task done.</p></div>
+    <div class="chips" role="group" aria-label="Project">${['All', 'Doxis', 'Power BI'].map(p => `<button class="chip" aria-pressed="${f === p}" data-action="filter-project" data-v="${p}">${p}</button>`).join('')}</div></div>
+    <div class="board-wrap"><div class="board">${cols.map(c => { const items = list.filter(t => t.state === c); return `<div class="col"><div class="col-head"><span>${STATE[c]}</span><span class="mono muted">${items.length}</span></div>${items.length ? items.map(t => `<a class="card" href="${taskHref(t)}"><div class="spread"><span class="mono" style="font-size:12px">${t.id}</span><span class="proj">${t.project}</span></div><div class="card-title">${esc(t.title)}</div>${isDoxisOpen(t) ? `<div class="bar ${ageClass(t.ageH)}"><span style="width:${Math.min(t.ageH / 24, 1) * 100}%"></span></div>` : ''}<div class="spread"><span class="next">${esc(t.next)}</span>${isDoxisOpen(t) ? `<span class="age ${ageClass(t.ageH)}">${fmtAge(t.ageH)}</span>` : ''}</div>${t.approval && S.approvals.some(a => a.id === t.approval) ? modeBadge('Ask') : ''}</a>`).join('') : '<div class="empty">Nothing here</div>'}</div>`; }).join('')}</div></div>
+  </div>`;
+}
+
+function pageTask(t) {
+  const ap = t.approval && S.approvals.find(a => a.id === t.approval);
+  const markMap = { pass: '✓', fail: '✕', unknown: '?' };
+  return `<div class="page">
+    ${pausedBanner()}
+    <div><a href="#tasks" class="note">← All tasks</a></div>
+    <div class="page-head">
+      <div><div class="eyebrow">${t.project} · ${esc(t.type)} · recipe: ${esc(t.recipe)}</div><h1><span class="mono" style="font-size:.8em">${t.id}</span> ${esc(t.title)}</h1>
+      <div class="row" style="margin-top:8px"><span class="pill ${t.state}">${STATE[t.state]}</span>${isDoxisOpen(t) ? `<span class="tag ${ageClass(t.ageH)}">Age ${fmtAge(t.ageH)} of 24h</span>` : ''}<span class="muted" style="font-size:13px">Next: ${esc(t.next)}</span></div></div>
+      <div class="row">${t.state !== 'done' && t.state !== 'scheduled' ? `<button class="btn" data-action="mark-done" data-id="${t.id}">Mark done</button>` : ''}</div>
+    </div>
+    <div class="detail">
+      <section class="panel">
+        <div class="panel-head"><h2>Thread</h2><span class="note">Talk to this task's agent here. It only sees this task.</span></div>
+        <div class="thread" id="thread">${t.events.length ? t.events.map(e => `<div class="ev"><span class="ev-time">${esc(e[0])}</span><div><div class="ev-who ${e[1]}">${esc(e[2])}</div><div class="ev-text">${esc(e[3])}</div></div></div>`).join('') : '<p class="muted">No activity yet. This task runs on its schedule.</p>'}</div>
+        ${ap ? `<div class="approval${ap.edited ? ' edited' : ''}"><div class="spread"><span>${modeBadge('Ask')} <b style="margin-left:6px">${esc(ap.kind)} to ${esc(ap.to)}</b></span><span class="note">${esc(ap.expires)}</span></div><div class="draft">${esc(ap.text)}</div><div class="row"><button class="btn primary" data-action="approve" data-id="${ap.id}">${ap.edited ? 'Approve edited text' : 'Approve'}</button><a class="btn" href="#approvals">Edit in approvals</a><button class="btn ghost" data-action="reject" data-id="${ap.id}">Reject</button></div></div>` : ''}
+        <div class="composer"><textarea id="msg" rows="2" placeholder="e.g. check access for the affected user, or draft a shorter version"></textarea><button class="btn primary" data-action="send-msg" data-id="${t.id}">Send</button></div>
+      </section>
+      <aside style="display:flex;flex-direction:column;gap:18px;min-width:0">
+        <section class="panel"><h2>Task card</h2><dl class="kv"><dt>Caller</dt><dd>${esc(t.caller)}</dd><dt>Affected person</dt><dd>${esc(t.affected)}</dd><dt>Where</dt><dd>${esc(t.site)}</dd><dt>Priority</dt><dd>${esc(t.priority)}</dd></dl></section>
+        <section class="panel"><div class="panel-head"><h2>Running summary</h2><span class="note">Rewritten after each update</span></div><div class="summary">${esc(t.summary)}</div></section>
+        ${t.facts.length ? `<section class="panel"><h2>Checks</h2><div class="facts">${t.facts.map(f => `<div class="fact"><span class="fact-mark ${f[1]}" aria-label="${f[1]}">${markMap[f[1]]}</span><div>${esc(f[0])}<small>${esc(f[2])}</small></div></div>`).join('')}</div></section>` : ''}
+        ${t.precedents.length ? `<section class="panel"><div class="panel-head"><h2>Similar past tickets</h2><span class="note">From the incident workbook</span></div><div class="prec">${t.precedents.map(p => `<div><span class="tag">${p[0]}</span> ${esc(p[1])}</div>`).join('')}</div></section>` : ''}
+      </aside>
+    </div>
+  </div>`;
+}
+
+function pageApprovals() {
+  return `<div class="page" style="max-width:900px">
+    ${pausedBanner()}
+    <div class="page-head"><div><div class="eyebrow">Ask mode · nothing here is sent until you approve</div><h1>Approvals</h1><p class="lede">An approval covers exactly the text shown. If you edit it, the edited version needs its own approval. Approvals expire after 24 hours and go back to the task.</p></div></div>
+    ${S.approvals.length ? S.approvals.map(a => { const t = task(a.task); const editing = S.editing === a.id; return `<article class="approval${a.edited ? ' edited' : ''}">
+      <div class="spread"><div class="row">${modeBadge('Ask')}<b>${esc(a.kind)}</b><span class="muted">to ${esc(a.to)}</span></div><span class="note ${a.urgent ? 'warn' : ''}">${esc(a.expires)}</span></div>
+      <div class="note"><a href="${taskHref(t)}"><span class="mono">${t.id}</span> · ${esc(t.title)}</a> · via ${esc(a.via)} · recipe: ${esc(a.recipe)}</div>
+      ${editing ? `<textarea class="draft-edit" id="edit-${a.id}">${esc(a.text)}</textarea><div class="row"><button class="btn primary" data-action="save-edit" data-id="${a.id}">Save edit</button><button class="btn ghost" data-action="cancel-edit">Cancel</button></div>` : `<div class="draft">${esc(a.text)}</div>${a.edited ? '<div class="note">You edited this text. Approve the edited version to send it.</div>' : ''}<div class="row"><button class="btn primary" data-action="approve" data-id="${a.id}">${a.edited ? 'Approve edited text' : 'Approve'}</button><button class="btn" data-action="edit" data-id="${a.id}">Edit</button><button class="btn ghost" data-action="reject" data-id="${a.id}">Reject</button></div>`}
+    </article>`; }).join('') : '<section class="panel"><h2>All clear</h2><p class="muted">No approvals waiting. New ones also arrive as cards in your Slack and Teams DM.</p></section>'}
+  </div>`;
+}
+
+function pageRecipes() {
+  const groups = ['Core', 'Doxis', 'Power BI'];
+  return `<div class="page">
+    <div class="page-head"><div><div class="eyebrow">Tasks are configuration, not code</div><h1>Recipes</h1><p class="lede">Each recipe says when to run, which tools it may use and where its output goes. New recipes start in Shadow mode: they draft and log, but never act, until you switch them to Live.</p></div><a class="btn primary" href="#recipe-new">New recipe</a></div>
+    ${groups.map(g => `<section class="panel"><div class="panel-head"><h2>${g === 'Core' ? 'Phase 1 skills' : g + ' recipes'}</h2><span class="note">${S.recipes.filter(r => r.project === g && r.status === 'Live').length} live</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Recipe</th><th>Trigger</th><th>Model</th><th>Last run</th><th>Status</th></tr></thead><tbody>
+      ${S.recipes.filter(r => r.project === g).map(r => `<tr><td><a href="#recipe-${r.slug}"><b>${esc(r.name)}</b></a></td><td>${esc(r.trigger)}</td><td>${r.model}</td><td class="mono nowrap">${r.last}</td><td><select class="field" style="width:auto" data-action="recipe-status" data-slug="${r.slug}" aria-label="Status of ${esc(r.name)}">${['Live', 'Shadow', 'Off'].map(s => `<option${s === r.status ? ' selected' : ''}>${s}</option>`).join('')}</select></td></tr>`).join('')}
+      </tbody></table></div></section>`).join('')}
+  </div>`;
+}
+
+let draft = null;
+function yamlOf(r) {
+  const words = (r.instructions || '').split(/\s+/); const lines = []; let cur = '';
+  words.forEach(w => { if ((cur + ' ' + w).trim().length > 64) { lines.push(cur.trim()); cur = w; } else cur += ' ' + w; }); if (cur.trim()) lines.push(cur.trim());
+  return `name: ${r.slug || 'new-recipe'}\nproject: ${r.project}\ntrigger: "${r.trigger}"\nmodel: ${r.model.toLowerCase()}\nstatus: ${r.status.toLowerCase()}\ntools:\n${r.tools.map(t => `  - ${t}   # ${toolMode(t)}`).join('\n') || '  []'}\ninstructions: >\n${lines.map(l => '  ' + l).join('\n')}\noutput: ${r.output}`;
+}
+function pageRecipe(slug) {
+  const base = slug === 'new' ? { slug: '', name: '', project: 'Doxis', trigger: 'Poll · Outlook every 10 min', model: 'Haiku', status: 'Shadow', last: '—', tools: ['read_mail'], instructions: '', output: 'Task thread' } : S.recipes.find(r => r.slug === slug);
+  if (!base) return notFound();
+  draft = JSON.parse(JSON.stringify(base));
+  return `<div class="page">
+    <div><a href="#recipes" class="note">← All recipes</a></div>
+    <div class="page-head"><div><div class="eyebrow">${slug === 'new' ? 'New recipe' : 'Edit recipe'}</div><h1>${esc(base.name || 'Untitled recipe')}</h1><p class="lede">Tool modes are fixed by the connector. A recipe can use a tool, but can never make it act with less approval than its mode.</p></div>
+    <div class="row"><button class="btn" data-action="test-recipe">Test on a sample</button><button class="btn primary" data-action="save-recipe">${slug === 'new' ? 'Save in Shadow mode' : 'Save changes'}</button></div></div>
+    <div class="editor">
+      <section class="panel"><div class="form">
+        <label for="f-name">Name</label><input id="f-name" type="text" data-field="name" value="${esc(base.name)}" placeholder="e.g. Weekly ticket digest">
+        <label for="f-project">Project</label><select id="f-project" data-field="project">${['Core', 'Doxis', 'Power BI'].map(p => `<option${p === base.project ? ' selected' : ''}>${p}</option>`).join('')}</select>
+        <label for="f-trigger">Trigger<small>Schedule, poll or event</small></label><input id="f-trigger" type="text" data-field="trigger" value="${esc(base.trigger)}">
+        <label for="f-model">Model<small>Haiku is free and the default</small></label><select id="f-model" data-field="model">${['Haiku', 'Sonnet', 'Opus'].map(m => `<option${m === base.model ? ' selected' : ''}>${m}</option>`).join('')}</select>
+        <label>Tools<small>Mode shown beside each</small></label><div class="tools">${TOOLS.map(t => `<div class="tool"><label><input type="checkbox" data-tool="${t[0]}" ${base.tools.includes(t[0]) ? 'checked' : ''} ${t[1] === 'Hand off' ? 'disabled' : ''}>${t[0]}</label>${modeBadge(t[1])}</div>`).join('')}</div>
+        <label for="f-ins">Instructions<small>Plain language, like a note to a colleague</small></label><textarea id="f-ins" data-field="instructions" placeholder="What should it do each time it runs?">${esc(base.instructions)}</textarea>
+        <label for="f-out">Output</label><select id="f-out" data-field="output">${['Task thread', 'Main DM', 'Approval card', 'Brief section', 'DM alert', 'Outlook drafts + approval card', 'Nightly digest', 'Verdict card', 'DM table', 'Backlog + drafts', 'DM list', 'DM alert + brief', 'Check-in message'].map(o => `<option${o === base.output ? ' selected' : ''}>${o}</option>`).join('')}</select>
+      </div></section>
+      <aside class="sticky" style="display:flex;flex-direction:column;gap:18px;min-width:0">
+        <section class="panel"><div class="panel-head"><h2>Recipe file</h2><span class="note">recipes/${esc(base.slug || 'new-recipe')}.yaml</span></div><pre class="yaml" id="yaml">${esc(yamlOf(base))}</pre></section>
+        <section class="panel" id="testOut" hidden><h2>Test run on a sample</h2><div id="testBody"></div></section>
+      </aside>
+    </div>
+  </div>`;
+}
+
+function pageActivity() {
+  const f = S.modeFilter;
+  const rows = S.activity.filter(a => f === 'All' || a.mode === f);
+  return `<div class="page" style="max-width:none">
+    <div class="page-head"><div><div class="eyebrow">Append-only audit log</div><h1>Activity</h1><p class="lede">Every tool call the agent makes, with its mode and result. Report actions can be undone from here.</p></div>
+    <div class="chips" role="group" aria-label="Mode">${['All', 'Silent', 'Report', 'Ask', 'Hand off'].map(m => `<button class="chip" aria-pressed="${f === m}" data-action="filter-mode" data-v="${m}">${m}</button>`).join('')}</div></div>
+    <section class="panel"><div class="panel-head"><h2>Workers right now</h2><span class="note">One coordinator, a pool of 4 short-lived task workers, one worker per task at a time</span></div>
+      <div class="workers">
+        <div class="worker busy"><b>Coordinator</b><span>${S.paused ? 'Paused' : 'Watching Outlook, Teams, Power BI'}</span><span class="note">Queue: 2 jobs</span></div>
+        <div class="worker busy"><b>Worker 1</b><span>INC30117002 · precedent search</span><span class="note">14 s · Haiku</span></div>
+        <div class="worker"><b>Worker 2</b><span>Idle</span><span class="note">—</span></div>
+        <div class="worker busy"><b>Worker 3</b><span>PBI-H03 · SQL row count</span><span class="note">3 s · code only</span></div>
+        <div class="worker"><b>Worker 4</b><span>Idle</span><span class="note">Next: INC30115230 · reply received</span></div>
+      </div>
+    </section>
+    <div class="table-wrap"><table><thead><tr><th>Time</th><th>Task or recipe</th><th>What it did</th><th>Tool</th><th>Mode</th><th>Result</th><th></th></tr></thead><tbody>
+      ${rows.map(a => `<tr class="${a.undone ? 'struck' : ''}"><td class="mono nowrap">${esc(a.time)}</td><td class="nowrap">${esc(a.ref)}</td><td>${esc(a.action)}</td><td class="mono">${esc(a.tool)}</td><td>${modeBadge(a.mode)}</td><td>${esc(a.undone ? 'Undone' : a.result)}</td><td class="nowrap">${a.undo && !a.undone ? `<button class="linkbtn" data-action="undo" data-i="${S.activity.indexOf(a)}">Undo</button>` : ''}</td></tr>`).join('')}
+    </tbody></table></div>
+  </div>`;
+}
+
+function pageMemory() {
+  const tab = S.memTab;
+  const tabs = [['personal', 'About you'], ['directory', 'Site directory'], ['lessons', 'Lessons'], ['sources', 'Reference sources'], ['tasks', 'Task memory']];
+  let body = '';
+  if (tab === 'personal') body = `<div class="grid2"><section class="panel"><div class="panel-head"><h2>profile.md</h2><span class="note">Loaded on every run</span></div><div class="memo">Udit · App developer · Bangalore (IST)
+Supports Doxis (RDDMS) incidents and Power BI reports for the client
+Working hours 09:00–18:30 IST, Mon–Fri
+Most callers work on CET</div></section>
+    <section class="panel"><div class="panel-head"><h2>preferences.md</h2><span class="note">Loaded on every run</span></div><div class="memo">Keep caller messages short; offer a with-steps version
+Sign caller messages "Thanks, Udit"
+Never mention the 24-hour KPI to callers
+Batch non-urgent items into the next check-in
+At most 6 pushes a day</div></section></div>
+    <section class="panel"><h2>Writing style samples</h2><p class="muted">24 of your sent Teams messages and emails, names removed. Used for drafts in your voice. Refreshed monthly.</p></section>`;
+  if (tab === 'directory') body = `<section class="panel"><div class="panel-head"><h2>KM and LBA per site</h2><span class="note">Code looks these up; names never go to the model. Entries older than 90 days need a fresh screenshot.</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Site</th><th>Name</th><th>KM</th><th>LBA</th><th>Last checked</th><th>Source</th></tr></thead><tbody>${S.directory.map(d => `<tr><td class="mono">${d[0]}</td><td>${esc(d[1])}</td><td>${esc(d[2])}</td><td>${esc(d[3])}</td><td class="nowrap">${d[4]}${d[4] === '04 Jun' ? ' <span class="mode Ask">Stale</span>' : ''}</td><td>${esc(d[5])}</td></tr>`).join('')}</tbody></table></div></section>`;
+  if (tab === 'lessons') body = `<section class="panel"><div class="panel-head"><h2>Proposed from your corrections</h2><span class="note">Saved only when you approve</span></div>
+    <div class="list">${S.lessons.filter(l => l.state === 'proposed').map(l => `<div class="item"><span class="rank">→</span><div><div class="item-title">${esc(l.text)}</div><div class="item-meta">${esc(l.from)}</div></div><div class="row"><button class="btn" data-action="lesson" data-id="${l.id}" data-v="approved">Save rule</button><button class="btn ghost" data-action="lesson" data-id="${l.id}" data-v="discarded">Discard</button></div></div>`).join('') || '<p class="muted">No proposals right now.</p>'}</div></section>
+    <section class="panel"><h2>Saved rules</h2><div class="list">${S.lessons.filter(l => l.state === 'approved').map(l => `<div class="item"><span class="rank">✓</span><div><div class="item-title">${esc(l.text)}</div><div class="item-meta">${esc(l.from)}</div></div><span></span></div>`).join('')}</div></section>`;
+  if (tab === 'sources') body = `<section class="panel"><div class="panel-head"><h2>Searchable reference material</h2><span class="note">Full-text search in SQLite; no embeddings needed</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Source</th><th>Items</th><th>Last indexed</th><th></th></tr></thead><tbody>
+    ${[['Doxis incident workbook (L2 history)', '408 tickets', '21 Oct'], ['Closed tickets saved as precedents', '37 tickets', 'Today 02:10'], ['Validated rights matrix', '612 rows', '15 Jul'], ['D2 roles specification', '48 pages', '15 Jul'], ['KB articles KB01–KB04', '4 articles', '18 Oct'], ['Site access request guide', '6 pages', '02 Oct']].map((s, i) => `<tr><td>${s[0]}</td><td class="mono">${s[1]}</td><td class="nowrap" id="idx-${i}">${s[2]}</td><td><button class="linkbtn" data-action="reindex" data-i="${i}">Re-index</button></td></tr>`).join('')}
+    </tbody></table></div></section>`;
+  if (tab === 'tasks') body = `<section class="panel"><h2>How each task remembers</h2><p class="muted">Every task has four parts. Each run loads the first two and the last few events, then asks for more only when a step needs it.</p>
+    <div class="grid2"><div class="summary"><b>Task card</b><br>Structured fields: state, people, site, checks, next action, deadline. Always loaded.</div><div class="summary"><b>Running summary</b><br>What has happened so far, rewritten after each update to a fixed length. Always loaded.</div><div class="summary"><b>Event log</b><br>Every email, message, action and approval with source links. Only the last few are loaded.</div><div class="summary"><b>Attachments</b><br>Screenshot text, drafts, files. Loaded only on request. Raw text expires after 14 days.</div></div>
+    <p class="note">Names are replaced with tokens before any model call. The token map stays on this laptop.</p></section>`;
+  return `<div class="page">
+    <div class="page-head"><div><div class="eyebrow">Stored on this laptop</div><h1>Memory</h1><p class="lede">The agent rebuilds a small context for every run from what is stored here, instead of carrying a long conversation. Everything links back to its source.</p></div></div>
+    <div class="tabs" role="tablist">${tabs.map(t => `<button class="tab" role="tab" aria-selected="${tab === t[0]}" data-action="mem-tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
+    ${body}
+  </div>`;
+}
+
+function pageConnectors() {
+  const c = [
+    ['Outlook mail', 'ok', 'Connected', 'Microsoft Graph, client tenant', ['Read and search mail', 'Move, flag, save drafts (Report)', 'Send only after approval (Ask)'], 'Mail.Read · Mail.ReadWrite · Mail.Send'],
+    ['Outlook calendar', 'ok', 'Connected', 'Microsoft Graph', ['Read today\'s meetings for prep', 'Tentative holds on your own calendar'], 'Calendars.Read'],
+    ['Microsoft Teams', 'part', 'Read and send', 'Graph, polled every 5 min', ['Read chats and mentions', 'Post in incident chats after approval', 'Meeting transcripts: waiting for admin consent'], 'Chat.Read · ChatMessage.Send'],
+    ['Slack', 'ok', 'Connected', 'Socket Mode, no public URL needed', ['Your main DM and approval cards', 'Mention digest'], 'Bot in your workspace'],
+    ['Power BI', 'ok', 'Connected', 'REST API, delegated as you', ['Refresh history and schedules', 'Trigger refreshes after approval', 'Execute Queries: blocked by tenant'], 'Dataset.ReadWrite · Dataflow.ReadWrite · Report.Read'],
+    ['SharePoint lists', 'ok', 'Read only', 'Graph', ['Read history lists for completeness checks'], 'Sites.Read.All'],
+    ['ServiceNow', 'part', 'No API · email adapter', 'Notification emails + hourly report', ['New tickets from assignment emails', 'True state from the hourly scheduled report', 'Comments by replying to the notification email (to test)', 'State changes: you, in ServiceNow'], 'Browser read access is planned for Phase 4'],
+    ['Doxis webCube', 'pend', 'No API · screenshots', 'Local OCR on this laptop', ['You share screenshots; fields are read locally', 'Read-only browser access needs client approval'], 'Phase 4'],
+    ['SQL (Pipeline Tracker, Forecast Hub)', 'pend', 'Waiting for login', 'Read-only login, counts and dates only', ['Row counts and latest load date'], 'Needs sign-off from the database owner'],
+    ['ICA gateway', 'ok', 'Connected', 'Claude models', ['Haiku: default for every run', 'Sonnet: caller drafts and long transcripts', 'Data rule: metadata only until approved'], 'Key stored in Windows Credential Manager'],
+  ];
+  return `<div class="page">
+    <div class="page-head"><div><div class="eyebrow">Adapters · one per system</div><h1>Connectors</h1><p class="lede">Recipes talk to adapters, not to systems directly. When ServiceNow or Doxis gets an API later, only the adapter changes.</p></div></div>
+    <div class="grid3">${c.map(x => `<section class="panel conn"><div class="spread"><h3>${x[0]}</h3><span class="st ${x[1]}">${x[2]}</span></div><span class="note">${x[3]}</span><ul>${x[4].map(i => `<li>${esc(i)}</li>`).join('')}</ul><span class="tag" style="white-space:normal">${esc(x[5])}</span></section>`).join('')}</div>
+  </div>`;
+}
+
+function pagePrefs() {
+  const policy = [['Read mail, chats, reports and files', 'Silent'], ['File or flag your own mail', 'Report'], ['Save a draft', 'Report'], ['Add a task or a hold on your own calendar', 'Report'], ['Retry your own failed refresh (known transient error)', 'Report'], ['Send an email or chat message', 'Ask'], ['Trigger a Prod refresh', 'Ask'], ['Edit a shared list or document', 'Ask'], ['Change a ServiceNow ticket state', 'Hand off'], ['Delete anything', 'Hand off'], ['Message anyone outside the company', 'Hand off'], ['Grant access', 'Hand off']];
+  return `<div class="page" style="max-width:980px">
+    ${pausedBanner()}
+    <div class="page-head"><div><div class="eyebrow">How the agent behaves</div><h1>Settings</h1></div></div>
+    <section class="panel"><h2>Schedule</h2><div class="form">
+      <label for="p-hours">Working hours</label><div class="row"><input id="p-hours" type="time" value="09:00" style="width:auto"> to <input id="p-hours-end" type="time" value="18:30" style="width:auto" aria-label="End of working hours"></div>
+      <label for="p-brief">Morning brief</label><input id="p-brief" type="time" value="09:00" style="width:auto">
+      <label for="p-interval">Check-ins<small>Polling for new items runs every 5–10 min regardless</small></label><select id="p-interval" style="width:auto"><option>Every hour</option><option selected>Every 2 hours</option><option>Every 4 hours</option></select>
+      <label for="p-push">Pushes per day<small>Extra items wait for the next check-in</small></label><input id="p-push" type="number" value="6" min="1" max="20" style="width:90px">
+    </div></section>
+    <section class="panel"><h2>Models</h2><div class="form">
+      <label>Default</label><div><b>Haiku</b> <span class="muted">for every run. Free through ICA.</span></div>
+      <label>Use Sonnet for<small>Off unless ticked</small></label><div style="display:flex;flex-direction:column;gap:6px"><label class="switch"><input type="checkbox" id="s1" checked> Caller-facing drafts</label><label class="switch"><input type="checkbox" id="s2" checked> Meeting transcripts over 30 min</label><label class="switch"><input type="checkbox" id="s3"> Weekly reports</label></div>
+      <label for="p-budget">Daily Sonnet limit</label><div class="row"><input id="p-budget" type="number" value="40" style="width:90px"> <span class="muted">runs a day, then Haiku only</span></div>
+    </div></section>
+    <section class="panel"><div class="panel-head"><h2>What may go to the model</h2><span class="st pend">Waiting for written approval</span></div>
+      <p class="muted">Until your delivery lead confirms the data rule with the client, only metadata goes to ICA: ticket numbers, report names, refresh times, counts. Names are always replaced with tokens.</p>
+      <div style="display:flex;flex-direction:column;gap:6px"><label class="switch"><input type="checkbox" checked disabled> Metadata</label><label class="switch"><input type="checkbox" disabled> Ticket and email text (pseudonymised)</label><label class="switch"><input type="checkbox" disabled> Chat text and meeting transcripts</label><label class="switch"><input type="checkbox" disabled> Screenshots as images</label></div></section>
+    <section class="panel"><div class="panel-head"><h2>Action policy</h2><span class="note">Unknown actions default to Ask. Hand off rows can't be changed.</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Action</th><th>Mode</th></tr></thead><tbody>${policy.map((p, i) => `<tr><td>${p[0]}</td><td>${p[1] === 'Hand off' ? modeBadge('Hand off') : `<select class="field" style="width:auto" id="pol-${i}" aria-label="Mode for ${esc(p[0])}">${['Silent', 'Report', 'Ask'].filter(m => p[1] !== 'Ask' || m === 'Ask' || true).map(m => `<option${m === p[1] ? ' selected' : ''}>${m}</option>`).join('')}</select>`}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note">After you approve the same kind of action unchanged several times, the agent suggests moving it to Report. You decide.</p></section>
+    <section class="panel"><h2>Stop or start over</h2>
+      <div class="row"><button class="btn" data-action="toggle-pause">${S.paused ? 'Resume agent' : 'Pause agent'}</button><button class="btn danger" data-action="reset-ask">Reset memory and tasks</button></div>
+      ${S.resetAsk ? `<div class="confirm"><span>This deletes all task memory, lessons and schedules on this laptop. The audit log is kept.</span><button class="btn danger" data-action="reset-do">Delete and reset</button><button class="btn ghost" data-action="reset-cancel">Cancel</button></div>` : ''}
+    </section>
+  </div>`;
+}
+
+function notFound() { return `<div class="page"><h1>Page not found</h1><p><a href="#brief">Go to the morning brief</a></p></div>`; }
+
+/* ---------- router ---------- */
+function render() {
+  const h = (location.hash || '#brief').slice(1);
+  let route = h, html;
+  if (h === 'brief' || h === '') html = pageBrief();
+  else if (h === 'tasks') html = pageTasks();
+  else if (h.startsWith('task-')) { const t = S.tasks.find(x => x.id.toLowerCase() === h.slice(5)); html = t ? pageTask(t) : notFound(); route = 'tasks'; }
+  else if (h === 'approvals') html = pageApprovals();
+  else if (h === 'recipes') html = pageRecipes();
+  else if (h.startsWith('recipe-')) { html = pageRecipe(h.slice(7)); route = 'recipes'; }
+  else if (h === 'activity') html = pageActivity();
+  else if (h === 'memory') html = pageMemory();
+  else if (h === 'connectors') html = pageConnectors();
+  else if (h === 'prefs') html = pagePrefs();
+  else html = notFound();
+  document.getElementById('main').innerHTML = html;
+  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.route === (route || 'brief')));
+  updateChrome();
+}
+function rerender() { const y = window.scrollY; render(); window.scrollTo(0, y); }
+window.addEventListener('hashchange', () => { S.editing = null; S.resetAsk = false; render(); window.scrollTo(0, 0); });
+
+/* ---------- actions ---------- */
+function approve(id) {
+  const a = S.approvals.find(x => x.id === id); if (!a) return;
+  if (S.paused) { toast('The agent is paused. Resume it to send approved actions.'); return; }
+  S.approvals = S.approvals.filter(x => x.id !== id);
+  const t = task(a.task);
+  if (a.kind === 'Power BI refresh') {
+    t.state = 'progress'; t.next = 'Refreshing: dataflow, then dataset';
+    addEvent(t, 'you', 'You', 'Approved the refresh plan.');
+    log(t.id, 'Started dataflow refresh for Global Cockpit (you approved)', 'trigger_refresh', 'Ask', 'Running');
+    toast('Refresh started. The agent will reply to Priya when it finishes.');
+    setTimeout(() => { t.state = 'done'; t.next = 'Refreshed at ' + now(); addEvent(t, 'agent', 'Agent', 'Dataflow and dataset refreshed. Posted the approved reply to Priya: "Refreshed at ' + now() + ' IST; source data up to 08:20."'); log(t.id, 'Posted the approved reply to Priya', 'post_chat', 'Ask', 'Sent'); rerender(); toast('Global Cockpit refreshed. Priya has her reply.'); }, 3500);
+  } else {
+    const waitingNext = { a1: 'Waiting for Tomás to raise the site request', a2: 'Escalated to Doxis L2; waiting on them', a3: 'Reminder sent; waiting on Sophie', a5: 'Acknowledged; estimate due Friday' };
+    t.state = 'waiting'; t.next = waitingNext[id] || 'Sent; waiting';
+    addEvent(t, 'you', 'You', (a.edited ? 'Approved your edited text. ' : 'Approved. ') + 'Sent the ' + a.kind.toLowerCase() + ' to ' + a.to + '.');
+    log(t.id, 'Sent the ' + a.kind.toLowerCase() + ' to ' + a.to + ' (you approved)', a.kind.startsWith('Email') ? 'send_mail' : 'post_chat', 'Ask', 'Sent');
+    toast('Sent to ' + a.to + '.');
+  }
+  rerender();
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]'); if (!el || el.tagName === 'SELECT') return;
+  const act = el.dataset.action, id = el.dataset.id;
+  if (act === 'toggle-pause') { S.paused = !S.paused; log('Agent', S.paused ? 'Paused all schedules and pending actions' : 'Resumed', '—', 'Silent', 'Done'); toast(S.paused ? 'Paused. Nothing will run until you resume.' : 'Resumed. Next check-in at 11:00.'); rerender(); }
+  if (act === 'checkin') { if (S.paused) { toast('Resume the agent to run a check-in.'); return; } log('Check-in', 'Polled Outlook, Teams and Power BI on request', 'read_mail, read_chat', 'Silent', '1 new item'); toast('Check-in done: 1 new item. Elena\'s reply was already picked up.'); rerender(); }
+  if (act === 'prep') toast('Prep brief: 7 open Doxis tickets, 2 rendition issues this week (possible platform issue), 1 waiting on L2.');
+  if (act === 'filter-project') { S.projectFilter = el.dataset.v; rerender(); }
+  if (act === 'filter-mode') { S.modeFilter = el.dataset.v; rerender(); }
+  if (act === 'approve') approve(id);
+  if (act === 'reject') { const a = S.approvals.find(x => x.id === id); S.approvals = S.approvals.filter(x => x.id !== id); const t = task(a.task); t.next = 'You rejected the draft; tell the agent what to change'; addEvent(t, 'you', 'You', 'Rejected the drafted ' + a.kind.toLowerCase() + '.'); log(t.id, 'Draft rejected by you', 'save_draft', 'Ask', 'Not sent'); toast('Rejected. Nothing was sent.'); rerender(); }
+  if (act === 'edit') { S.editing = id; rerender(); const ta = document.getElementById('edit-' + id); if (ta) ta.focus(); }
+  if (act === 'cancel-edit') { S.editing = null; rerender(); }
+  if (act === 'save-edit') { const a = S.approvals.find(x => x.id === id); const ta = document.getElementById('edit-' + id); if (a && ta && ta.value.trim() !== a.text.trim()) { a.text = ta.value; a.edited = true; toast('Edit saved. Approve the edited text to send it.'); } S.editing = null; rerender(); }
+  if (act === 'undo') { const a = S.activity[+el.dataset.i]; if (a) { a.undone = true; log(a.ref, 'Undid: ' + a.action, a.tool, 'Report', 'Reverted'); toast('Undone.'); rerender(); } }
+  if (act === 'mark-done') { const t = task(id); t.state = 'done'; t.next = 'Closed by you at ' + now(); if (t.approval) S.approvals = S.approvals.filter(a => a.id !== t.approval); addEvent(t, 'you', 'You', 'Marked this task done. It will be saved as a precedent tonight.'); log(t.id, 'Task closed by you', 'update_ledger', 'Report', 'Done'); toast(t.id + ' marked done.'); rerender(); }
+  if (act === 'send-msg') {
+    const ta = document.getElementById('msg'); const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    const t = task(id); addEvent(t, 'you', 'You', text); rerender();
+    const th = document.getElementById('thread'); th.insertAdjacentHTML('beforeend', '<div class="ev"><span class="ev-time"></span><div class="typing">Agent is working on it…</div></div>');
+    setTimeout(() => {
+      const l = text.toLowerCase(); let reply;
+      if (l.includes('short')) reply = 'Made a shorter version and replaced the draft. It still needs your approval.';
+      else if (l.includes('access') || l.includes('check')) reply = 'Ran the access checks again for the affected person. No change: not a member of the leading site. Source: validated rights matrix.';
+      else if (l.includes('escalat') || l.includes('l2')) reply = 'Drafted an L2 package with the checks so far. It is waiting for your approval.';
+      else if (l.includes('summar')) reply = t.summary;
+      else reply = 'Noted on this task. I will use it on the next run and post here when something changes.';
+      addEvent(t, 'agent', 'Agent', reply); log(t.id, 'Answered your message in the task thread', 'update_ledger', 'Silent', 'Done'); rerender();
+    }, 900);
+  }
+  if (act === 'mem-tab') { S.memTab = el.dataset.v; rerender(); }
+  if (act === 'lesson') { const l = S.lessons.find(x => x.id === id); l.state = el.dataset.v; if (el.dataset.v === 'approved') l.from = 'Approved today'; toast(el.dataset.v === 'approved' ? 'Rule saved. It applies from the next run.' : 'Discarded.'); rerender(); }
+  if (act === 'reindex') { const c = document.getElementById('idx-' + el.dataset.i); if (c) c.textContent = 'Today ' + now(); toast('Re-indexed.'); }
+  if (act === 'reset-ask') { S.resetAsk = true; rerender(); }
+  if (act === 'reset-cancel') { S.resetAsk = false; rerender(); }
+  if (act === 'reset-do') { S.resetAsk = false; toast('This is a prototype, so nothing was deleted. In the app, memory and tasks would now be empty.'); rerender(); }
+  if (act === 'test-recipe') {
+    const box = document.getElementById('testOut'), body = document.getElementById('testBody'); if (!box || !draft) return; box.hidden = false;
+    const acts = draft.tools.map(t => `<div class="row" style="justify-content:space-between"><span class="mono" style="font-size:12px">${t}</span>${modeBadge(toolMode(t))}</div>`).join('');
+    body.innerHTML = `<p class="muted" style="font-size:13px">Sample: INC30099999 "Cannot open project folder" (made-up ticket). Model: ${esc(draft.model)}.</p><div style="display:flex;flex-direction:column;gap:6px">${acts || '<span class="muted">No tools selected.</span>'}</div><p class="note">Shadow test: anything in Ask mode was drafted, not sent. ${draft.tools.some(t => toolMode(t) === 'Ask') ? 'You would get an approval card.' : 'No approval needed.'}</p>`;
+  }
+  if (act === 'save-recipe') {
+    if (!draft.name.trim()) { toast('Give the recipe a name first.'); document.getElementById('f-name').focus(); return; }
+    const existing = S.recipes.find(r => r.slug === draft.slug && draft.slug);
+    if (existing) { Object.assign(existing, draft); toast('Saved. Changes apply from the next run.'); }
+    else { draft.slug = draft.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'new-recipe'; draft.status = 'Shadow'; S.recipes.push(draft); toast('Saved in Shadow mode. Switch it to Live on the recipes page when it looks right.'); }
+    location.hash = '#recipes';
+  }
+});
+
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.action === 'recipe-status') { const r = S.recipes.find(x => x.slug === el.dataset.slug); r.status = el.value; log(r.name, 'Status changed to ' + el.value, '—', 'Silent', 'Done'); toast(r.name + ' is now ' + el.value + '.'); }
+});
+document.addEventListener('input', e => {
+  const el = e.target; if (!draft || !document.getElementById('yaml')) return;
+  if (el.dataset.field) draft[el.dataset.field] = el.value;
+  if (el.dataset.tool) { draft.tools = [...document.querySelectorAll('[data-tool]:checked')].map(x => x.dataset.tool); }
+  if (el.dataset.field === 'name' && !S.recipes.some(r => r.slug === draft.slug && draft.slug)) draft.slug = el.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  document.getElementById('yaml').textContent = yamlOf(draft);
+});
+
+render();
+})();
+</script>

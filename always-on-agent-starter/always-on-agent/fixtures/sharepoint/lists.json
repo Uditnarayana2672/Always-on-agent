@@ -1,0 +1,51 @@
+{
+  "lists": [
+    {
+      "id": "e1ef1692-4ec5-55ea-9bad-1f4fb6e211bc",
+      "displayName": "Report refresh history",
+      "columns": {
+        "Report": "Title",
+        "RefreshDate": "field_1",
+        "Rows": "field_2"
+      },
+      "items": [
+        {
+          "id": "1",
+          "lastModifiedDateTime": "2026-03-21T06:00:00Z",
+          "fields": {
+            "Title": "Sales Overview",
+            "field_1": "2026-03-21",
+            "field_2": 1001
+          }
+        },
+        {
+          "id": "2",
+          "lastModifiedDateTime": "2026-03-22T06:00:00Z",
+          "fields": {
+            "Title": "Sales Overview",
+            "field_1": "2026-03-22",
+            "field_2": 1002
+          }
+        },
+        {
+          "id": "3",
+          "lastModifiedDateTime": "2026-03-23T06:00:00Z",
+          "fields": {
+            "Title": "Sales Overview",
+            "field_1": "2026-03-23",
+            "field_2": 1003
+          }
+        },
+        {
+          "id": "4",
+          "lastModifiedDateTime": "2026-03-24T06:00:00Z",
+          "fields": {
+            "Title": "Sales Overview",
+            "field_1": "2026-03-24",
+            "field_2": 1004
+          }
+        }
+      ]
+    }
+  ]
+}

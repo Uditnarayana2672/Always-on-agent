@@ -1,0 +1,14 @@
+{
+  "company_domain": "corp.example",
+  "user": "Test User",
+  "people": [
+    "Anna Keller",
+    "Tomás Rivera",
+    "Sophie Laurent",
+    "Elena Rossi",
+    "Karim Haddad",
+    "Priya Nair",
+    "Marc Dubois"
+  ],
+  "note": "All names, addresses, ids, sites and reports are made up."
+}

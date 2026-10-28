@@ -1,0 +1,24 @@
+# Local config and data
+config/config.yaml
+*.db
+*.db-shm
+*.db-wal
+logs/
+memory/
+fixtures/private/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+
+# Console
+node_modules/
+console/dist/
+
+# Local environment
+.env

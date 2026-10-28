@@ -1,0 +1,31 @@
+timezone: Asia/Kolkata
+caller_timezone: Europe/Zurich
+work: { days: [mon, tue, wed, thu, fri], start: "09:00", end: "18:30", holidays: [] }
+schedule:
+  brief: "09:00"
+  checkin_every_minutes: 120
+  nightly_digest: "19:00"
+  poll_minutes: { mail: 5, teams: 5, powerbi: 10, servicenow_report: 60 }
+  chase_window_local_caller: "09:00"   # converted to IST each day
+notifications:
+  primary: slack                         # slack | teams_self | email_self
+  max_pushes_per_day: 6
+  quiet_hours: { start: "21:30", end: "08:30" }
+models:
+  default: haiku
+  ids: { haiku: claude-haiku-4-5, sonnet: claude-sonnet-5, opus: "" }   # ICA ids; no Opus on ICA
+  sonnet_daily_limit: 40
+  sonnet_for: [caller_drafts, long_transcripts, weekly_reports]
+ica: { base_url_env: ICA_BASE_URL, key_ref: "keyring:always-on-agent/ica" }
+graph: { tenant_id: "", client_id: "", scopes: [Mail.ReadWrite, Mail.Send, Calendars.ReadWrite, Chat.ReadWrite, Sites.Read.All] }
+powerbi: { scopes: [Dataset.ReadWrite.All, Dataflow.ReadWrite.All, Report.Read.All, Workspace.Read.All], refresh_cap_per_day: 8 }
+data_rule: { level: metadata }           # metadata | text | chat | images
+company_domains: []
+allowed_groups: { doxis_l2: "" }
+clock: { start: opened, pause_on_hold: false, thresholds_hours: [12, 18, 22] }
+workers: { pool_size: 4, max_steps_per_run: 12, job_timeout_seconds: 300, lock_ttl_minutes: 10 }
+retention: { raw_text_days: 14, screenshots_days: 7, transcripts: delete_after_extract }
+paths: { workbook: "", rights_matrix: "", specs: [], screenshots_inbox: "" }
+console: { host: 127.0.0.1, port: 8765 }
+database: { url: "sqlite+aiosqlite:///agent.db" }   # relative to the working directory
+slack: { user_id: "" }                    # your Slack member id (U...)

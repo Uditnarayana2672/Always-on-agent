@@ -1,0 +1,36 @@
+# Tool -> mode. Modes: silent | report | ask | hand_off.
+# Hand off entries are locked and cannot be changed from the console.
+tools:
+  read_mail: { mode: silent }
+  search_mail: { mode: silent }
+  read_report_email: { mode: silent }
+  read_chat: { mode: silent }
+  read_calendar: { mode: silent }
+  get_transcript: { mode: silent }
+  search_workbook: { mode: silent }
+  search_memory: { mode: silent }
+  ocr_local: { mode: silent }
+  read_directory: { mode: silent }
+  get_refresh_history: { mode: silent }
+  read_sharepoint_list: { mode: silent }
+  sql_count: { mode: silent }
+  move_mail: { mode: report }
+  flag_mail: { mode: report }
+  categorise: { mode: report }
+  save_draft: { mode: report }
+  update_ledger: { mode: report }
+  add_hold: { mode: report }
+  update_directory: { mode: report }
+  write_memory: { mode: report }
+  send_mail: { mode: ask }
+  post_chat: { mode: ask }
+  trigger_refresh: { mode: ask }
+  trigger_dataflow_refresh: { mode: ask }
+  update_refresh_schedule: { mode: ask }
+  edit_shared_list: { mode: ask }
+  add_comment_by_reply: { mode: ask }
+  delete_item: { mode: hand_off, locked: true }
+  change_ticket_state: { mode: hand_off, locked: true }
+  grant_access: { mode: hand_off, locked: true }
+  message_outside_company: { mode: hand_off, locked: true }
+  enter_credentials: { mode: hand_off, locked: true }

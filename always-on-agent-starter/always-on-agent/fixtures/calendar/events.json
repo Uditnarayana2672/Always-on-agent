@@ -1,0 +1,94 @@
+[
+  {
+    "id": "AAMkAGFAKEEVT01",
+    "subject": "Doxis L2 stand-up",
+    "sensitivity": "normal",
+    "showAs": "busy",
+    "start": {
+      "dateTime": "2026-03-25T09:30:00.0000000",
+      "timeZone": "India Standard Time"
+    },
+    "end": {
+      "dateTime": "2026-03-25T09:45:00.0000000",
+      "timeZone": "India Standard Time"
+    },
+    "organizer": {
+      "emailAddress": {
+        "name": "Anna Keller",
+        "address": "anna.keller@corp.example"
+      }
+    },
+    "isOnlineMeeting": true,
+    "onlineMeeting": {
+      "joinUrl": "https://teams.example/meet/fake-standup"
+    }
+  },
+  {
+    "id": "AAMkAGFAKEEVT02",
+    "subject": "Sales Overview review with business",
+    "sensitivity": "normal",
+    "showAs": "busy",
+    "start": {
+      "dateTime": "2026-03-25T10:00:00.0000000",
+      "timeZone": "W. Europe Standard Time"
+    },
+    "end": {
+      "dateTime": "2026-03-25T10:30:00.0000000",
+      "timeZone": "W. Europe Standard Time"
+    },
+    "organizer": {
+      "emailAddress": {
+        "name": "Tomás Rivera",
+        "address": "tomas.rivera@corp.example"
+      }
+    },
+    "isOnlineMeeting": true,
+    "onlineMeeting": {
+      "joinUrl": "https://teams.example/meet/fake-sales-review"
+    }
+  },
+  {
+    "id": "AAMkAGFAKEEVT03",
+    "subject": "Private appointment",
+    "sensitivity": "private",
+    "showAs": "busy",
+    "start": {
+      "dateTime": "2026-03-25T17:00:00.0000000",
+      "timeZone": "India Standard Time"
+    },
+    "end": {
+      "dateTime": "2026-03-25T18:00:00.0000000",
+      "timeZone": "India Standard Time"
+    },
+    "organizer": {
+      "emailAddress": {
+        "name": "Test User",
+        "address": "test.user@corp.example"
+      }
+    },
+    "isOnlineMeeting": false,
+    "onlineMeeting": null
+  },
+  {
+    "id": "AAMkAGFAKEEVT04",
+    "subject": "Focus time",
+    "sensitivity": "normal",
+    "showAs": "tentative",
+    "start": {
+      "dateTime": "2026-03-25T15:00:00.0000000",
+      "timeZone": "India Standard Time"
+    },
+    "end": {
+      "dateTime": "2026-03-25T16:00:00.0000000",
+      "timeZone": "India Standard Time"
+    },
+    "organizer": {
+      "emailAddress": {
+        "name": "Test User",
+        "address": "test.user@corp.example"
+      }
+    },
+    "isOnlineMeeting": false,
+    "onlineMeeting": null
+  }
+]

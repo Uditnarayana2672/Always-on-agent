@@ -1,0 +1,194 @@
+{
+  "me": {
+    "id": "ea50e77f-59d7-5ccd-a57b-616409117e64",
+    "displayName": "Test User",
+    "userIdentityType": "aadUser"
+  },
+  "chats": [
+    {
+      "id": "19:fake-priya@unq.gbl.spaces",
+      "chatType": "oneOnOne",
+      "topic": null,
+      "members": [
+        {
+          "user": {
+            "id": "ea50e77f-59d7-5ccd-a57b-616409117e64",
+            "displayName": "Test User",
+            "userIdentityType": "aadUser"
+          }
+        },
+        {
+          "user": {
+            "id": "aa1d34e0-dd9e-5220-a608-135b7299fccd",
+            "displayName": "Priya Nair",
+            "userIdentityType": "aadUser"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "id": "19:fake-priya@unq.gbl.spaces-m1",
+          "chatId": "19:fake-priya@unq.gbl.spaces",
+          "messageType": "message",
+          "createdDateTime": "2026-03-25T03:00:00Z",
+          "lastModifiedDateTime": "2026-03-25T03:00:00Z",
+          "deletedDateTime": null,
+          "from": {
+            "user": {
+              "id": "aa1d34e0-dd9e-5220-a608-135b7299fccd",
+              "displayName": "Priya Nair",
+              "userIdentityType": "aadUser"
+            }
+          },
+          "body": {
+            "contentType": "html",
+            "content": "<p>REF-0412: can you refresh Sales Overview? https://app.powerbi.com/groups/9edaad7b-5ce2-5924-bc1d-bf9a912483a4/reports/772657e6-6a15-5fdd-8441-ee2877e081ec/ReportSection?experience=power-bi</p>"
+          },
+          "mentions": []
+        },
+        {
+          "id": "19:fake-priya@unq.gbl.spaces-m2",
+          "chatId": "19:fake-priya@unq.gbl.spaces",
+          "messageType": "message",
+          "createdDateTime": "2026-03-25T03:01:00Z",
+          "lastModifiedDateTime": "2026-03-25T03:01:00Z",
+          "deletedDateTime": null,
+          "from": {
+            "user": {
+              "id": "aa1d34e0-dd9e-5220-a608-135b7299fccd",
+              "displayName": "Priya Nair",
+              "userIdentityType": "aadUser"
+            }
+          },
+          "body": {
+            "contentType": "html",
+            "content": "<p>Business needs it before 11:00 CET.</p>"
+          },
+          "mentions": []
+        }
+      ]
+    },
+    {
+      "id": "19:fake-doxis-l2@thread.v2",
+      "chatType": "group",
+      "topic": "Doxis L2 support",
+      "members": [
+        {
+          "user": {
+            "id": "ea50e77f-59d7-5ccd-a57b-616409117e64",
+            "displayName": "Test User",
+            "userIdentityType": "aadUser"
+          }
+        },
+        {
+          "user": {
+            "id": "67b96837-7fa0-5d3c-8d5a-40a7980b6654",
+            "displayName": "Karim Haddad",
+            "userIdentityType": "aadUser"
+          }
+        },
+        {
+          "user": {
+            "id": "89b10c48-78a1-5763-8376-49ef11215d9b",
+            "displayName": "Anna Keller",
+            "userIdentityType": "aadUser"
+          }
+        }
+      ],
+      "messages": [
+        {
+          "id": "19:fake-doxis-l2@thread.v2-m1",
+          "chatId": "19:fake-doxis-l2@thread.v2",
+          "messageType": "message",
+          "createdDateTime": "2026-03-25T02:30:00Z",
+          "lastModifiedDateTime": "2026-03-25T02:30:00Z",
+          "deletedDateTime": null,
+          "from": {
+            "user": {
+              "id": "67b96837-7fa0-5d3c-8d5a-40a7980b6654",
+              "displayName": "Karim Haddad",
+              "userIdentityType": "aadUser"
+            }
+          },
+          "body": {
+            "contentType": "html",
+            "content": "<p><at id=\"0\">Test User</at> can you look at INC30115230? Search is empty for ORB-02.</p>"
+          },
+          "mentions": [
+            {
+              "id": 0,
+              "mentionText": "Test User",
+              "mentioned": {
+                "user": {
+                  "id": "ea50e77f-59d7-5ccd-a57b-616409117e64",
+                  "displayName": "Test User",
+                  "userIdentityType": "aadUser"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "19:fake-doxis-l2@thread.v2-m2",
+          "chatId": "19:fake-doxis-l2@thread.v2",
+          "messageType": "message",
+          "createdDateTime": "2026-03-25T02:35:00Z",
+          "lastModifiedDateTime": "2026-03-25T02:41:00Z",
+          "deletedDateTime": null,
+          "from": {
+            "user": {
+              "id": "67b96837-7fa0-5d3c-8d5a-40a7980b6654",
+              "displayName": "Karim Haddad",
+              "userIdentityType": "aadUser"
+            }
+          },
+          "body": {
+            "contentType": "html",
+            "content": "<p>Update: it affects SGP-03 as well.</p>"
+          },
+          "mentions": []
+        },
+        {
+          "id": "19:fake-doxis-l2@thread.v2-m3",
+          "chatId": "19:fake-doxis-l2@thread.v2",
+          "messageType": "message",
+          "createdDateTime": "2026-03-25T02:50:00Z",
+          "lastModifiedDateTime": "2026-03-25T02:50:00Z",
+          "deletedDateTime": "2026-03-25T02:52:00Z",
+          "from": {
+            "user": {
+              "id": "89b10c48-78a1-5763-8376-49ef11215d9b",
+              "displayName": "Anna Keller",
+              "userIdentityType": "aadUser"
+            }
+          },
+          "body": {
+            "contentType": "html",
+            "content": ""
+          },
+          "mentions": []
+        },
+        {
+          "id": "19:fake-doxis-l2@thread.v2-m4",
+          "chatId": "19:fake-doxis-l2@thread.v2",
+          "messageType": "message",
+          "createdDateTime": "2026-03-25T02:55:00Z",
+          "lastModifiedDateTime": "2026-03-25T02:55:00Z",
+          "deletedDateTime": null,
+          "from": {
+            "user": {
+              "id": "89b10c48-78a1-5763-8376-49ef11215d9b",
+              "displayName": "Anna Keller",
+              "userIdentityType": "aadUser"
+            }
+          },
+          "body": {
+            "contentType": "html",
+            "content": "<p>Please keep the caller updated today.</p>"
+          },
+          "mentions": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+﻿Number;Short description;State;Priority;Opened;Updated;Assigned to;Assignment group;Caller
+INC30108754;KM/LBA field missing on site page;On Hold;3 - Moderate;2026-03-23 08:12:00;2026-03-25 03:30:00;Test User;Doxis L2;Tomás Rivera
+INC30109981;Cannot open archived documents in Doxis;In Progress;3 - Moderate;2026-03-24 07:40:00;2026-03-25 03:30:00;Test User;Doxis L2;Elena Rossi
+INC30114872;Access denied to project folder;In Progress;2 - High;2026-03-24 13:05:00;2026-03-25 03:30:00;Test User;Doxis L2;Sophie Laurent
+INC30115230;Search returns no results for site;Assigned;3 - Moderate;2026-03-25 02:15:00;2026-03-25 03:30:00;Test User;Doxis L2;Elena Rossi
+INC30116640;Request new reviewer role for site;Assigned;4 - Low;2026-03-25 02:50:00;2026-03-25 03:30:00;Test User;Doxis L2;Tomás Rivera
+INC30117002;Closing date not saved on project;Assigned;3 - Moderate;2026-03-25 03:20:00;2026-03-25 03:30:00;Test User;Doxis L2;Sophie Laurent

@@ -1,0 +1,725 @@
+[
+  {
+    "id": "AAMkAGFAKE0001",
+    "conversationId": "AAQkAGFAKECONV0001",
+    "internetMessageId": "<fake-0001@corp.example>",
+    "subject": "Incident INC30108754 has been assigned to group Doxis L2",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-23T08:13:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "ServiceNow"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "Incident INC30108754 has been assigned to group Doxis L2.\n\nShort description: KM/LBA field missing on site page\nCaller: ",
+    "body": {
+      "contentType": "text",
+      "content": "Incident INC30108754 has been assigned to group Doxis L2.\n\nShort description: KM/LBA field missing on site page\nCaller: Tomás Rivera\nSite: SGP-03\nPriority: 3 - Moderate\nOpened: 2026-03-23 08:12 UTC\n\nLink: https://servicenow.corp.example/nav_to.do?uri=incident.do?sysparm_query=number=INC30108754"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0002",
+    "conversationId": "AAQkAGFAKECONV0002",
+    "internetMessageId": "<fake-0002@corp.example>",
+    "subject": "Incident INC30109981 has been assigned to group Doxis L2",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-24T07:41:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "ServiceNow"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "Incident INC30109981 has been assigned to group Doxis L2.\n\nShort description: Cannot open archived documents in Doxis\nCa",
+    "body": {
+      "contentType": "text",
+      "content": "Incident INC30109981 has been assigned to group Doxis L2.\n\nShort description: Cannot open archived documents in Doxis\nCaller: Elena Rossi\nSite: ORB-02\nPriority: 3 - Moderate\nOpened: 2026-03-24 07:40 UTC\n\nLink: https://servicenow.corp.example/nav_to.do?uri=incident.do?sysparm_query=number=INC30109981"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0003",
+    "conversationId": "AAQkAGFAKECONV0003",
+    "internetMessageId": "<fake-0003@corp.example>",
+    "subject": "Incident INC30114872 has been assigned to group Doxis L2",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-24T13:06:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "ServiceNow"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "Incident INC30114872 has been assigned to group Doxis L2.\n\nShort description: Access denied to project folder\nCaller: So",
+    "body": {
+      "contentType": "text",
+      "content": "Incident INC30114872 has been assigned to group Doxis L2.\n\nShort description: Access denied to project folder\nCaller: Sophie Laurent\nSite: VRS-01\nPriority: 2 - High\nOpened: 2026-03-24 13:05 UTC\n\nLink: https://servicenow.corp.example/nav_to.do?uri=incident.do?sysparm_query=number=INC30114872"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0004",
+    "conversationId": "AAQkAGFAKECONV0004",
+    "internetMessageId": "<fake-0004@corp.example>",
+    "subject": "Incident INC30115230 has been assigned to group Doxis L2",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T02:16:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "ServiceNow"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "Incident INC30115230 has been assigned to group Doxis L2.\n\nShort description: Search returns no results for site\nCaller:",
+    "body": {
+      "contentType": "text",
+      "content": "Incident INC30115230 has been assigned to group Doxis L2.\n\nShort description: Search returns no results for site\nCaller: Elena Rossi\nSite: ORB-02\nPriority: 3 - Moderate\nOpened: 2026-03-25 02:15 UTC\n\nLink: https://servicenow.corp.example/nav_to.do?uri=incident.do?sysparm_query=number=INC30115230"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0005",
+    "conversationId": "AAQkAGFAKECONV0005",
+    "internetMessageId": "<fake-0005@corp.example>",
+    "subject": "Incident INC30116640 has been assigned to group Doxis L2",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T02:51:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "ServiceNow"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "Incident INC30116640 has been assigned to group Doxis L2.\n\nShort description: Request new reviewer role for site\nCaller:",
+    "body": {
+      "contentType": "text",
+      "content": "Incident INC30116640 has been assigned to group Doxis L2.\n\nShort description: Request new reviewer role for site\nCaller: Tomás Rivera\nSite: SGP-03\nPriority: 4 - Low\nOpened: 2026-03-25 02:50 UTC\n\nLink: https://servicenow.corp.example/nav_to.do?uri=incident.do?sysparm_query=number=INC30116640"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0006",
+    "conversationId": "AAQkAGFAKECONV0006",
+    "internetMessageId": "<fake-0006@corp.example>",
+    "subject": "Incident INC30117002 has been assigned to group Doxis L2",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T03:21:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "ServiceNow"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "Incident INC30117002 has been assigned to group Doxis L2.\n\nShort description: Closing date not saved on project\nCaller: ",
+    "body": {
+      "contentType": "text",
+      "content": "Incident INC30117002 has been assigned to group Doxis L2.\n\nShort description: Closing date not saved on project\nCaller: Sophie Laurent\nSite: VRS-01\nPriority: 3 - Moderate\nOpened: 2026-03-25 03:20 UTC\n\nLink: https://servicenow.corp.example/nav_to.do?uri=incident.do?sysparm_query=number=INC30117002"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0007",
+    "conversationId": "AAQkAGFAKECONV0007",
+    "internetMessageId": "<fake-0007@corp.example>",
+    "subject": "Incident INC30114872 - comment added",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T02:40:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Sophie Laurent added a comment to INC30114872:\n\nThanks, I will try again tomorrow.\n\nReply to this email to add a comment",
+    "body": {
+      "contentType": "text",
+      "content": "Sophie Laurent added a comment to INC30114872:\n\nThanks, I will try again tomorrow.\n\nReply to this email to add a comment."
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0008",
+    "conversationId": "AAQkAGFAKECONV0008",
+    "internetMessageId": "<fake-0008@corp.example>",
+    "subject": "Incident INC30109981 - comment added",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T03:05:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Elena Rossi added a comment to INC30109981:\n\nThe archive still shows an empty list for ORB-02.\n\nReply to this email to a",
+    "body": {
+      "contentType": "text",
+      "content": "Elena Rossi added a comment to INC30109981:\n\nThe archive still shows an empty list for ORB-02.\n\nReply to this email to add a comment."
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0009",
+    "conversationId": "AAQkAGFAKECONV0009",
+    "internetMessageId": "<fake-0009@corp.example>",
+    "subject": "Hourly report: Doxis L2 open incidents (CSV)",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T03:30:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": true,
+    "bodyPreview": "Scheduled report attached.",
+    "body": {
+      "contentType": "text",
+      "content": "Scheduled report attached."
+    },
+    "attachments": [
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "id": "ATT-doxis_l2_open.csv",
+        "name": "doxis_l2_open.csv",
+        "contentType": "text/csv",
+        "size": 947,
+        "contentBytes": "77u/TnVtYmVyO1Nob3J0IGRlc2NyaXB0aW9uO1N0YXRlO1ByaW9yaXR5O09wZW5lZDtVcGRhdGVkO0Fzc2lnbmVkIHRvO0Fzc2lnbm1lbnQgZ3JvdXA7Q2FsbGVyDQpJTkMzMDEwODc1NDtLTS9MQkEgZmllbGQgbWlzc2luZyBvbiBzaXRlIHBhZ2U7T24gSG9sZDszIC0gTW9kZXJhdGU7MjAyNi0wMy0yMyAwODoxMjowMDsyMDI2LTAzLTI1IDAzOjMwOjAwO1Rlc3QgVXNlcjtEb3hpcyBMMjtUb23DoXMgUml2ZXJhDQpJTkMzMDEwOTk4MTtDYW5ub3Qgb3BlbiBhcmNoaXZlZCBkb2N1bWVudHMgaW4gRG94aXM7SW4gUHJvZ3Jlc3M7MyAtIE1vZGVyYXRlOzIwMjYtMDMtMjQgMDc6NDA6MDA7MjAyNi0wMy0yNSAwMzozMDowMDtUZXN0IFVzZXI7RG94aXMgTDI7RWxlbmEgUm9zc2kNCklOQzMwMTE0ODcyO0FjY2VzcyBkZW5pZWQgdG8gcHJvamVjdCBmb2xkZXI7SW4gUHJvZ3Jlc3M7MiAtIEhpZ2g7MjAyNi0wMy0yNCAxMzowNTowMDsyMDI2LTAzLTI1IDAzOjMwOjAwO1Rlc3QgVXNlcjtEb3hpcyBMMjtTb3BoaWUgTGF1cmVudA0KSU5DMzAxMTUyMzA7U2VhcmNoIHJldHVybnMgbm8gcmVzdWx0cyBmb3Igc2l0ZTtBc3NpZ25lZDszIC0gTW9kZXJhdGU7MjAyNi0wMy0yNSAwMjoxNTowMDsyMDI2LTAzLTI1IDAzOjMwOjAwO1Rlc3QgVXNlcjtEb3hpcyBMMjtFbGVuYSBSb3NzaQ0KSU5DMzAxMTY2NDA7UmVxdWVzdCBuZXcgcmV2aWV3ZXIgcm9sZSBmb3Igc2l0ZTtBc3NpZ25lZDs0IC0gTG93OzIwMjYtMDMtMjUgMDI6NTA6MDA7MjAyNi0wMy0yNSAwMzozMDowMDtUZXN0IFVzZXI7RG94aXMgTDI7VG9tw6FzIFJpdmVyYQ0KSU5DMzAxMTcwMDI7Q2xvc2luZyBkYXRlIG5vdCBzYXZlZCBvbiBwcm9qZWN0O0Fzc2lnbmVkOzMgLSBNb2RlcmF0ZTsyMDI2LTAzLTI1IDAzOjIwOjAwOzIwMjYtMDMtMjUgMDM6MzA6MDA7VGVzdCBVc2VyO0RveGlzIEwyO1NvcGhpZSBMYXVyZW50DQo="
+      }
+    ]
+  },
+  {
+    "id": "AAMkAGFAKE0010",
+    "conversationId": "AAQkAGFAKECONV0010",
+    "internetMessageId": "<fake-0010@corp.example>",
+    "subject": "Hourly report: Doxis L2 open incidents (XLSX)",
+    "from": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "ServiceNow",
+        "address": "servicenow@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T03:31:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": true,
+    "bodyPreview": "Scheduled report attached.",
+    "body": {
+      "contentType": "text",
+      "content": "Scheduled report attached."
+    },
+    "attachments": [
+      {
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        "id": "ATT-doxis_l2_open.xlsx",
+        "name": "doxis_l2_open.xlsx",
+        "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "size": 5451,
+        "contentBytes": "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"
+      }
+    ]
+  },
+  {
+    "id": "AAMkAGFAKE0011",
+    "conversationId": "AAQkAGFAKECONV0011",
+    "internetMessageId": "<fake-0011@corp.example>",
+    "subject": "Priorities for this week",
+    "from": {
+      "emailAddress": {
+        "name": "Anna Keller",
+        "address": "anna.keller@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Anna Keller",
+        "address": "anna.keller@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-24T07:30:00Z",
+    "isRead": false,
+    "importance": "high",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Hi, please focus on INC30114872 first, then the Sales Overview refresh issue. Thanks, Anna",
+    "body": {
+      "contentType": "text",
+      "content": "Hi, please focus on INC30114872 first, then the Sales Overview refresh issue. Thanks, Anna"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0012",
+    "conversationId": "AAQkAGFAKECONV0012",
+    "internetMessageId": "<fake-0012@corp.example>",
+    "subject": "Sales Overview numbers look off for March",
+    "from": {
+      "emailAddress": {
+        "name": "Tomás Rivera",
+        "address": "tomas.rivera@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Tomás Rivera",
+        "address": "tomas.rivera@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T03:10:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "The March total on the Sales Overview report is lower than in the source. Can you check the last refresh?",
+    "body": {
+      "contentType": "text",
+      "content": "The March total on the Sales Overview report is lower than in the source. Can you check the last refresh?"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0013",
+    "conversationId": "AAQkAGFAKECONV0013",
+    "internetMessageId": "<fake-0013@corp.example>",
+    "subject": "IT News - March edition",
+    "from": {
+      "emailAddress": {
+        "name": "IT News",
+        "address": "newsletter@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "IT News",
+        "address": "newsletter@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-24T06:00:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [
+      "Newsletter"
+    ],
+    "hasAttachments": false,
+    "bodyPreview": "This month: new laptops, password tips and the spring cleanup.",
+    "body": {
+      "contentType": "text",
+      "content": "This month: new laptops, password tips and the spring cleanup."
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0014",
+    "conversationId": "AAQkAGFAKECONV0014",
+    "internetMessageId": "<fake-0014@corp.example>",
+    "subject": "FYI: dataflow maintenance on Saturday",
+    "from": {
+      "emailAddress": {
+        "name": "Priya Nair",
+        "address": "priya.nair@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Priya Nair",
+        "address": "priya.nair@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-24T15:20:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "FYI, the Sales Staging dataflow will be paused on Saturday 09:00-11:00 CET. No action needed.",
+    "body": {
+      "contentType": "text",
+      "content": "FYI, the Sales Staging dataflow will be paused on Saturday 09:00-11:00 CET. No action needed."
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0015",
+    "conversationId": "AAQkAGFAKECONV0015",
+    "internetMessageId": "<fake-0015@corp.example>",
+    "subject": "Question sur l'accès au dossier projet",
+    "from": {
+      "emailAddress": {
+        "name": "Sophie Laurent",
+        "address": "sophie.laurent@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Sophie Laurent",
+        "address": "sophie.laurent@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T02:30:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Bonjour, je n'arrive toujours pas à ouvrir le dossier du projet VRS-01. Pouvez-vous vérifier mes droits ? Merci, Sophie",
+    "body": {
+      "contentType": "text",
+      "content": "Bonjour, je n'arrive toujours pas à ouvrir le dossier du projet VRS-01. Pouvez-vous vérifier mes droits ? Merci, Sophie"
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0016",
+    "conversationId": "AAQkAGFAKECONV0016",
+    "internetMessageId": "<fake-0016@corp.example>",
+    "subject": "Integration test schedule",
+    "from": {
+      "emailAddress": {
+        "name": "Karim Haddad",
+        "address": "karim.haddad@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Karim Haddad",
+        "address": "karim.haddad@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [
+      {
+        "emailAddress": {
+          "name": "Marc Dubois",
+          "address": "marc.dubois@partner.example"
+        }
+      }
+    ],
+    "receivedDateTime": "2026-03-24T11:00:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Hi all, the integration test for ORB-02 moves to Friday. Marc, please confirm your team is available.",
+    "body": {
+      "contentType": "text",
+      "content": "Hi all, the integration test for ORB-02 moves to Friday. Marc, please confirm your team is available."
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0017",
+    "conversationId": "AAQkAGFAKECONV0017",
+    "internetMessageId": "<fake-0017@corp.example>",
+    "subject": "ENH-014: add region filter to Sales Overview",
+    "from": {
+      "emailAddress": {
+        "name": "Priya Nair",
+        "address": "priya.nair@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Priya Nair",
+        "address": "priya.nair@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-24T09:45:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Request ENH-014: business asks for a region filter on the Sales Overview report. Target: April release.",
+    "body": {
+      "contentType": "text",
+      "content": "Request ENH-014: business asks for a region filter on the Sales Overview report. Target: April release."
+    },
+    "attachments": []
+  },
+  {
+    "id": "AAMkAGFAKE0018",
+    "conversationId": "AAQkAGFAKECONV0018",
+    "internetMessageId": "<fake-0018@corp.example>",
+    "subject": "Thanks for the quick help",
+    "from": {
+      "emailAddress": {
+        "name": "Elena Rossi",
+        "address": "elena.rossi@corp.example"
+      }
+    },
+    "sender": {
+      "emailAddress": {
+        "name": "Elena Rossi",
+        "address": "elena.rossi@corp.example"
+      }
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "name": "Test User",
+          "address": "test.user@corp.example"
+        }
+      }
+    ],
+    "ccRecipients": [],
+    "receivedDateTime": "2026-03-25T03:25:00Z",
+    "isRead": false,
+    "importance": "normal",
+    "categories": [],
+    "hasAttachments": false,
+    "bodyPreview": "Thanks for looking into it so quickly!",
+    "body": {
+      "contentType": "text",
+      "content": "Thanks for looking into it so quickly!"
+    },
+    "attachments": []
+  }
+]

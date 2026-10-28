@@ -1,0 +1,170 @@
+{
+  "doxis_site_list.png": [
+    {
+      "text": "Doxis - Site list",
+      "box": [
+        20,
+        14,
+        192,
+        38
+      ]
+    },
+    {
+      "text": "Site code   Name                 State",
+      "box": [
+        30,
+        90,
+        333,
+        109
+      ]
+    },
+    {
+      "text": "ORB-02      Orbital Depot        Active",
+      "box": [
+        30,
+        138,
+        358,
+        161
+      ]
+    },
+    {
+      "text": "VRS-01      Verso Plant          Active",
+      "box": [
+        30,
+        186,
+        352,
+        205
+      ]
+    },
+    {
+      "text": "SGP-03      Seagate Hub          Closing",
+      "box": [
+        30,
+        234,
+        378,
+        257
+      ]
+    }
+  ],
+  "doxis_project_properties.png": [
+    {
+      "text": "Doxis - Project properties",
+      "box": [
+        20,
+        14,
+        309,
+        43
+      ]
+    },
+    {
+      "text": "Project: VRS-01 Line upgrade",
+      "box": [
+        30,
+        90,
+        295,
+        113
+      ]
+    },
+    {
+      "text": "State: Open",
+      "box": [
+        30,
+        138,
+        138,
+        161
+      ]
+    },
+    {
+      "text": "Closing date: 2026-04-30",
+      "box": [
+        30,
+        186,
+        254,
+        209
+      ]
+    },
+    {
+      "text": "TS/NP: TS",
+      "box": [
+        30,
+        234,
+        125,
+        253
+      ]
+    },
+    {
+      "text": "Roles: Reader, Editor",
+      "box": [
+        30,
+        282,
+        221,
+        304
+      ]
+    },
+    {
+      "text": "Owner: Sophie Laurent",
+      "box": [
+        30,
+        330,
+        236,
+        353
+      ]
+    }
+  ],
+  "doxis_site_page_km_lba.png": [
+    {
+      "text": "Doxis - Site page SGP-03",
+      "box": [
+        20,
+        14,
+        313,
+        43
+      ]
+    },
+    {
+      "text": "Site: SGP-03 Seagate Hub",
+      "box": [
+        30,
+        90,
+        269,
+        113
+      ]
+    },
+    {
+      "text": "KM: Tomás Rivera",
+      "box": [
+        30,
+        138,
+        196,
+        157
+      ]
+    },
+    {
+      "text": "LBA: (empty)",
+      "box": [
+        30,
+        186,
+        148,
+        209
+      ]
+    },
+    {
+      "text": "Reviewer: Karim Haddad",
+      "box": [
+        30,
+        234,
+        251,
+        253
+      ]
+    },
+    {
+      "text": "Last change: 2026-03-20",
+      "box": [
+        30,
+        282,
+        253,
+        305
+      ]
+    }
+  ]
+}
