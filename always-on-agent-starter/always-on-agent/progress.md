@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.17 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
+- Next prompt: 1.18 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
 - Last updated: 2026-10-29
 
 ---
@@ -49,7 +49,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [x] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | 2026-10-29: `config/recipes/*.yaml`, `recipes/steps/*`, `recipes/views.py`, `runtime/assembly.py`, `runtime/fake.py`; 25 recipe tests + fake-day test; `agentd run --fake --demo-only` posts brief, check-in and digest to the fake Slack DM |
 | [x] | 1.15 Console API | F15 | 2026-10-29: `api/{app,auth,models,service,stream,server}.py`, `runtime/settings.py`; 20 API tests; `agentd console` prints the one-time link; `agentd run --fake` serves the console on 127.0.0.1:8765 |
 | [x] | 1.16 Console UI | F15 | 2026-10-29: `console/src` (shell, 10 pages, live stream); 23 Vitest page tests; Playwright: 12 pixel comparisons with the prototype (9 pages at 1440 px, 3 at 400 px; all within 0.1 %, tasks and connectors identical) and the smoke test approving a drafted reply on `agentd run --fake --live-recipes` |
-| [ ] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | |
+| [!] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | 2026-10-29: `runtime/supervisor.py` (lock, 30 s heartbeat file, wake catch-up, drain), `runtime/health.py` (incidents said once), `runtime/real.py` (`agentd run` on whatever is set up), `scripts/install_task.ps1`, `agentd status`; 14 tests. Needs you: run `scripts\install_task.ps1 -StartNow` on the laptop, then sleep, unlock and check `uv run agentd status` |
 | [ ] | 1.18 End-to-end run and Phase 1 exit check | all | |
 
 **Phase 1 gate:** two working weeks of real use with no action outside its mode; brief read on most days.
@@ -128,7 +128,7 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-28 | Laptop sleeps after 5 min idle on AC (lock 15 min by policy) | Udit / IT | F01 always-on running; change sleep on AC to Never or ask IT |
 | 2026-10-28 | ICA Claude models all fail: `BedrockException Invalid Authentication` (ICA-side) | ICA support | 0.4 spike with Claude |
 | 2026-10-28 | Team frontier budget is 0 of 0 (resets 2 Nov). Of the "free" models only Gemma 4 answers; Llama 4 and Granite are rejected as frontier | Udit / team admin | Non-Gemma models |
-| 2026-10-29 | `backend/src/agent/memory/` (prompt 1.8) was never committed: `.gitignore` had `memory/`, which also matched it. Fresh checkouts fail `tests/recipes` and `agentd run`. `.gitignore` now ignores only the root `/memory/` | Udit: commit `backend/src/agent/memory/` and `backend/tests/memory/` from the laptop | 1.8 in git, recipe tests, `agentd run --fake` |
+| ~~2026-10-29~~ | Resolved 2026-10-29 (the memory package is on main). Was: `backend/src/agent/memory/` (prompt 1.8) was never committed: `.gitignore` had `memory/`, which also matched it. Fresh checkouts fail `tests/recipes` and `agentd run`. `.gitignore` now ignores only the root `/memory/` | Udit: commit `backend/src/agent/memory/` and `backend/tests/memory/` from the laptop | 1.8 in git, recipe tests, `agentd run --fake` |
 | 2026-10-28 | ICA API key (new, ends d2ce) — check expiry on the ICA page | Udit | All model calls after it expires |
 
 ## Decisions
@@ -302,6 +302,13 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | A console message is in the task's thread at once (same source ref as the worker's record, so never twice) | It used to appear only after a worker ran |
 | 2026-10-29 | The console words ledger and graph notes in plain language ("Moved to Waiting on others", "Would have done: flag the mail (Shadow: logged only).") | CLAUDE.md: no internal names in user-facing text |
 | 2026-10-29 | Console edge cases: signed-out screen with the `agentd console` hint; "Not reachable" status when agentd is down; stream reconnect refetches everything; stale approval (409) shows the server's reason and reloads; edits carry the hash the user saw; reset asks to pause first; locked and people-facing policy rows cannot be changed; project filter remembered per browser | Beyond the prototype, which has no server |
+| 2026-10-29 | Single instance through an OS file lock on `<data dir>/agentd.lock` (msvcrt on Windows, flock elsewhere); the heartbeat is a separate JSON file written atomically every 30 s | The OS frees the lock when the process dies, so a crash never leaves a stale lock; status can read the heartbeat while the lock is held |
+| 2026-10-29 | Wake detection is wall-clock: a gap of more than 90 s between 30 s beats catches up from the last beat (in the runtime's own time) and checks health at once; the scheduler's own 60 s DB heartbeat still catches gaps too | Sleep stops the event loop; the gap is the only reliable signal on a laptop |
+| 2026-10-29 | `agentd status` exits 0 running, 1 not running, 2 not responding (lock held, no beat for 2 min) | Usable from scripts and Task Scheduler checks |
+| 2026-10-29 | Health incidents have stable keys and are announced once, in one DM per check that lists only the new ones; cleared incidents are dropped. Failed jobs and missed schedules are info only (the worker pool and the next run already say so); setup gaps ("Microsoft 365: no app registration") are info | One DM per incident, not per check (prompt 1.17) |
+| 2026-10-29 | `agentd run` (real) starts with whatever is configured: Graph adapters once `graph.client_id` is set, Outlook COM on Windows otherwise, the ICA model when its URL and key exist, Slack when its id and tokens exist; each gap is a health note, never a failed start | Phase 1 runs before IT and Slack say yes (Q3, Q5) |
+| 2026-10-29 | Secrets: a missing credential store raises `ConfigError` like a missing secret | Linux CI and locked-down laptops crashed `agentd run` with `NoKeyringError` |
+| 2026-10-29 | Task Scheduler task "Always-On Agent": at log-on, on unlock (session state change 8) and every 15 minutes; interactive, limited rights; MultipleInstances IgnoreNew; restart 3 times a minute apart; no time limit; runs in a hidden PowerShell that appends to `logs/agentd.out.log` | F01 diagram; Outlook COM and Credential Manager need the user's own session |
 
 ## Session log
 
@@ -321,3 +328,4 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | 1.10–1.13 | Code done: Graph mail + calendar, COM parity, Teams, Power BI, pollers, tool registrations, Slack bot + cards + router + commands, Teams self note, email to self; 631 tests pass (excluding `tests/recipes`, which needs the uncommitted `agent.memory`), ruff and mypy clean apart from that import. Real-account checks blocked on Q3/Q5 | Commit `agent/memory`; when IT and Slack say yes: `agentd signin`, `agentd doctor`, `agentd run --fake --real-slack` |
 | 2026-10-29 | 1.15 | Done: console API, auth, SSE, settings overrides; 745 tests, ruff and mypy clean | Run 1.16 (console UI) |
 | 2026-10-29 | 1.16 | Done: console UI pixel-matched to the prototype; 747 backend tests, 23 console tests, 13 Playwright tests (12 pixel, 1 smoke); ruff, mypy, tsc clean | Run 1.17; decide Q14 |
+| 2026-10-29 | 1.17 | Code done: supervisor, health monitor, real `agentd run`, install script, `agentd status`; 762 backend tests, 23 console tests, 13 Playwright tests, ruff and mypy clean | Needs you: install the task on the laptop and check it survives sleep and unlock; then run 1.18 |

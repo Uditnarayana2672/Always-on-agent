@@ -330,6 +330,15 @@ class JobRepo(_Repo):
         rows = await self._all(select(s.jobs).where(s.jobs.c.task_id == task_id).order_by(s.jobs.c.id))
         return [Job(**r) for r in rows]
 
+    async def failed_since(self, at: datetime) -> list[Job]:
+        """Jobs that gave up (no retry left) and were due at or after `at`."""
+        rows = await self._all(
+            select(s.jobs)
+            .where(s.jobs.c.status == "failed", s.jobs.c.available_at >= at)
+            .order_by(s.jobs.c.id)
+        )
+        return [Job(**r) for r in rows]
+
     async def queue_length(self) -> int:
         """Jobs waiting to run, including ones backing off."""
         async with self._engine.connect() as conn:

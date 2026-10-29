@@ -346,7 +346,9 @@ class ConsoleService:
             ],
             meetings_note=meetings_note,
             latest_text=await self.rt.kv.get(BRIEF_KEY),
-            connectors_down=[f"{c.connector}: {c.status}" for c in data.connectors]
+            connectors_down=[
+                f"{c.connector}: {c.status}" if c.status else c.connector for c in data.connectors
+            ]
             + ([data.missed] if data.missed else []),
         )
 

@@ -4,11 +4,9 @@ from typing import TYPE_CHECKING
 
 import typer
 
-from agent import __version__
-
 if TYPE_CHECKING:
     from agent.core.auth import GraphAuth
-    from agent.runtime.assembly import Runtime
+    from agent.runtime.supervisor import RunParts
 
 app = typer.Typer(help="Always-On Agent daemon.", no_args_is_help=True)
 secret_app = typer.Typer(help="Manage secrets in Windows Credential Manager.", no_args_is_help=True)
@@ -44,46 +42,63 @@ def run(
     personal = PersonalMemory(get_config().paths.memory_dir or None)
     for path in personal.ensure():
         typer.echo(f"created {path} from its template; edit it to tell the agent about you")
-    if not fake:
-        typer.echo("not implemented yet")
-        return
     import asyncio
 
     if real_slack:
         _slack_check()
         return
+    if not fake:
+        raise typer.Exit(asyncio.run(_run_real()))
+    raise typer.Exit(asyncio.run(_run_fake(data_dir, demo_only, live_recipes)))
 
-    asyncio.run(_run_fake(data_dir, demo_only, live_recipes))
+
+async def _run_real() -> int:
+    """The supervisor on the real systems (F01): lock, build, health, start, heartbeat, drain."""
+    from agent.core.config import get_config
+    from agent.runtime.real import build_real_parts
+    from agent.runtime.supervisor import Supervisor, data_dir_for
+
+    config = get_config()
+
+    async def build() -> "RunParts":
+        return await build_real_parts(config)
+
+    return await Supervisor(data_dir_for(config.database.url), build, echo=typer.echo).run()
 
 
-async def _run_fake(data_dir: str | None, demo_only: bool, live: bool = False) -> None:
+async def _run_fake(data_dir: str | None, demo_only: bool, live: bool = False) -> int:
     """Fake mode builds only fakes: no Graph, Slack, Power BI or ICA client is created."""
+    import tempfile
+    from pathlib import Path
+
+    from agent.api.server import ConsoleServer, console_auth
     from agent.core.config import get_config
     from agent.runtime.fake import build_fake_runtime, run_demo
+    from agent.runtime.supervisor import RunParts, Supervisor
 
-    runtime, world = await build_fake_runtime(get_config(), data_dir, live=live)
-    try:
+    config = get_config()
+    folder = Path(data_dir) if data_dir else Path(tempfile.mkdtemp(prefix="agentd-fake-"))
+
+    async def build() -> RunParts:
+        runtime, world = await build_fake_runtime(config, folder, live=live)
         for status in await world.health():
             typer.echo(f"{status.connector:11} {status.status:8} {status.detail}")
         log = await run_demo(runtime, world)
         typer.echo(f"\nfake day at {runtime.clock.now_local():%Y-%m-%d %H:%M %Z}; fake Slack DM:")
         for message in log:
             typer.echo("  " + str(message["text"]).replace("\n", "\n  "))
+        auth = console_auth(runtime, fake=True)
+        server = ConsoleServer(runtime, auth, fake=True)
         if not demo_only:
-            await _serve(runtime)
-    finally:
-        await runtime.stop()
+            typer.echo(f"open the console (link works once, for 10 minutes): {await auth.login_link()}")
+        return RunParts(runtime=runtime, extras=[("console", server.serve, server.stop)], console=server.url)
 
-
-async def _serve(runtime: "Runtime") -> None:
-    """Keep the fake agent running (workers, no real schedules) and serve the console until Ctrl+C."""
-    from agent.api.server import console_auth, serve
-
-    await runtime.start(scheduler=False)
-    auth = console_auth(runtime, fake=True)
-    typer.echo("fake agent running; Ctrl+C to stop")
-    typer.echo(f"open the console (link works once, for 10 minutes): {await auth.login_link()}")
-    await serve(runtime, auth, fake=True)
+    if demo_only:
+        parts = await build()
+        await parts.runtime.stop()
+        return 0
+    supervisor = Supervisor(folder, build, mode="fake", echo=typer.echo, start_scheduler=False)
+    return await supervisor.run()
 
 
 def _slack_check() -> None:
@@ -213,6 +228,18 @@ async def _console_link(data_dir: str | None) -> str:
 
 
 @app.command()
-def status() -> None:
-    """Print the agent version."""
-    typer.echo(f"always-on-agent {__version__}")
+def status(
+    data_dir: str | None = typer.Option(None, "--data-dir", help="The --data-dir of an agentd run --fake."),
+) -> None:
+    """Is agentd running? Uptime, last check-in, queue and health. Exit 0 running, 1 not, 2 stuck."""
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from agent.core.config import get_config
+    from agent.runtime.supervisor import data_dir_for, status_lines
+
+    folder = Path(data_dir) if data_dir else data_dir_for(get_config().database.url)
+    code, lines = status_lines(folder, datetime.now(UTC))
+    for line in lines:
+        typer.echo(line)
+    raise typer.Exit(code)

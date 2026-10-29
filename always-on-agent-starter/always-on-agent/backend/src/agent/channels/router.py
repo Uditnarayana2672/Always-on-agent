@@ -44,6 +44,12 @@ class NotificationRouter:
         self.last_channel: str | None = None
         self._fallback_noted = False
 
+    def add(self, channel: NotifyChannel) -> None:
+        """A channel made after the router (it needs a client the adapters build); keeps the chain order."""
+        by_name = {c.name: c for c in [*self._chain, channel]}
+        order = [self._primary, *[n for n in CHAIN if n != self._primary]]
+        self._chain = [by_name[n] for n in order if n in by_name]
+
     async def send_card(self, text: str, blocks: list[dict[str, Any]]) -> None:
         """Like send, with a card for channels that can show one; the others get the text."""
         await self.send(text, blocks)

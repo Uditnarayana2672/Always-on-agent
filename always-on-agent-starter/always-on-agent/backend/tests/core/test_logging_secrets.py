@@ -105,3 +105,18 @@ def test_secret_roundtrip_registers_for_redaction(memory_keyring: MemoryKeyring)
 def test_missing_secret(memory_keyring: MemoryKeyring) -> None:
     with pytest.raises(ConfigError):
         get_secret("nope")
+
+
+def test_no_credential_store_is_a_config_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Linux CI or a locked-down laptop without a keyring backend: a clear error, not a crash."""
+    from keyring.errors import NoKeyringError
+
+    def broken(*_: object) -> None:
+        raise NoKeyringError("no backend")
+
+    monkeypatch.setattr(keyring, "get_password", broken)
+    monkeypatch.setattr(keyring, "set_password", broken)
+    with pytest.raises(ConfigError, match="no credential store"):
+        get_secret("ica")
+    with pytest.raises(ConfigError, match="no credential store"):
+        set_secret("ica", "x")

@@ -308,6 +308,7 @@ class AgentViews:
                         connector=row["connector"], status=row["status"], detail=row.get("last_error")
                     )
                 )
+        data.connectors += await self._incidents()
         thresholds = sorted(self.d.config.clock.thresholds_hours)
         for task in await self.d.tasks.list(OPEN_STATES):
             age = await self.d.ledger.age_hours(task.id)
@@ -333,6 +334,21 @@ class AgentViews:
         await self._meetings(day, data)
         await self._powerbi(data)
         return data
+
+    async def _incidents(self) -> list[ConnectorLine]:
+        """Open health incidents (F18) other than connectors, which the rows above already show."""
+        from agent.runtime.health import INCIDENTS_KEY
+
+        raw = await self.d.kv.get(INCIDENTS_KEY)
+        try:
+            incidents = json.loads(raw) if raw else []
+        except ValueError:
+            return []
+        return [
+            ConnectorLine(connector=str(i["text"]), status="")
+            for i in incidents
+            if i.get("severity") == "alert" and not str(i.get("key", "")).startswith("connector:")
+        ]
 
     async def _missed(self, day: date) -> str | None:
         """Yesterday's work-day brief that never ran (the laptop was off), said at the top (R01)."""

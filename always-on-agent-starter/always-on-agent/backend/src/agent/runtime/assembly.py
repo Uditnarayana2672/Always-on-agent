@@ -14,7 +14,7 @@ adapters, the model and the clock passed in differ.
 import asyncio
 import contextlib
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -75,6 +75,7 @@ from agent.recipes.triggers import RecipeCreateRule, RecipeMatcher, schedule_spe
 from agent.recipes.views import AgentViews, ViewDeps, register_view_tools
 from agent.runtime.controls import Controls, Resetter
 from agent.runtime.coordinator import Coordinator
+from agent.runtime.health import HealthMonitor
 from agent.runtime.outbox import Outbox
 from agent.runtime.pollers import Pollers
 from agent.runtime.scheduler import Scheduler
@@ -82,6 +83,9 @@ from agent.runtime.settings import apply_overrides, load_overrides, policy_with
 from agent.runtime.workers import HandlerRegistry, NotificationRequest, WorkerPool
 
 log = logging.getLogger(__name__)
+
+AdapterFactory = Callable[[KvRepo, HealthRepo, Clock], Awaitable[dict[str, Any]]]
+ModelFactory = Callable[[Config, Pseudonymiser, AsyncEngine, Clock], Awaitable[ModelRunner | None]]
 
 
 @dataclass
@@ -129,6 +133,7 @@ class Runtime:
     people: LedgerPeople
     token_map: TokenMapRepo
     schedule_runs: ScheduleRunRepo
+    health_monitor: HealthMonitor
     _exit: contextlib.AsyncExitStack
     listeners: list[Any] = field(default_factory=list)  # SSE hub and friends: called on changes
     started: bool = False
@@ -151,7 +156,12 @@ class Runtime:
         personal_dir: str | Path | None = None,
         recipes_dir: str | Path | None = None,
         console_url: str | None = None,
+        adapter_factory: AdapterFactory | None = None,
+        model_factory: ModelFactory | None = None,
+        data_dir: str | Path | None = None,
     ) -> "Runtime":
+        """adapter_factory and model_factory build the real adapters and the model once the database is
+        open (adapters keep delta tokens in kv; the model's privacy layer needs the pseudonymiser)."""
         url = db_url or config.database.url
         await asyncio.to_thread(upgrade_head, url)
         engine = create_engine_async(url)
@@ -172,6 +182,9 @@ class Runtime:
                 recipes_dir,
                 console_url or f"http://{config.console.host}:{config.console.port}",
                 exit_stack,
+                adapter_factory,
+                model_factory,
+                Path(data_dir) if data_dir else Path.cwd(),
             )
         except BaseException:
             await exit_stack.aclose()
@@ -195,6 +208,9 @@ class Runtime:
         recipes_dir: str | Path | None,
         console_url: str,
         exit_stack: contextlib.AsyncExitStack,
+        adapter_factory: "AdapterFactory | None" = None,
+        model_factory: "ModelFactory | None" = None,
+        data_dir: Path | None = None,
     ) -> "Runtime":
         from agent.graphs.runner import open_checkpointer
 
@@ -214,6 +230,8 @@ class Runtime:
             _reconfigure_clock(clock, config)
         ledger = Ledger(tasks, memory, ClockRepo(engine, clock), clock, config.clock)
 
+        if adapter_factory is not None:
+            adapters = {**adapters, **await adapter_factory(kv, health, clock)}
         registry = Registry(policy_with(load_policy(), policy_modes))
         register_all(registry, adapters)
         level = config.data_rule.level
@@ -229,6 +247,8 @@ class Runtime:
         )
         knowledge = Knowledge(Fts5SearchIndex(engine), clock, directory, lessons)
         personal = PersonalMemory(personal_dir or config.paths.memory_dir or None)
+        if model is None and model_factory is not None:
+            model = await model_factory(config, pseudo, engine, clock)
         context_log = ContextLogRepo(engine, clock)
         builder = ContextBuilder(task_memory, knowledge, personal, level, context_log)
         summaries = SummaryUpdater(model, task_memory, level) if model is not None else None
@@ -366,6 +386,18 @@ class Runtime:
             )
 
         pool = WorkerPool(jobs, handlers, clock, config.workers, ledger=ledger, notify=worker_notify)
+        health_monitor = HealthMonitor(
+            config,
+            clock,
+            adapters=adapters,
+            health=health,
+            kv=kv,
+            jobs=jobs,
+            ledger=ledger,
+            schedule_runs=schedule_runs,
+            notify=notifier.notify,
+            data_dir=data_dir,
+        )
         return cls(
             config=config,
             clock=clock,
@@ -410,6 +442,7 @@ class Runtime:
             people=people,
             token_map=token_map,
             schedule_runs=schedule_runs,
+            health_monitor=health_monitor,
             _exit=exit_stack,
         )
 

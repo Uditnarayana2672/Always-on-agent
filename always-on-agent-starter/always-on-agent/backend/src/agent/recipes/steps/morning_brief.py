@@ -68,7 +68,8 @@ def build_sections(data: BriefData) -> list[BriefSection]:
         BriefSection(
             heading="Connections",
             lines=[
-                f"{c.connector}: {c.status}" + (f" ({c.detail[:80]})" if c.detail else "")
+                (f"{c.connector}: {c.status}" if c.status else c.connector)
+                + (f" ({c.detail[:80]})" if c.detail else "")
                 for c in data.connectors
             ],
         ),
