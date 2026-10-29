@@ -1,0 +1,13 @@
+# R02 Inbox triage. Never deletes; the manager's mail stays in Inbox, flagged.
+name: inbox-triage
+title: Inbox triage
+project: general
+status: shadow
+trigger: {poll: mail, every: 5m}
+model: haiku
+data_classes: [metadata, text]
+tools: [read_mail, read_mail_rules, move_mail, flag_mail, categorise, open_reply_task]
+steps: agent.recipes.steps.inbox_triage:steps
+context: []
+output: digest
+exclusive_with: [draft-replies]

@@ -1,0 +1,12 @@
+# R05 Refresh-failure watch. One retry only for a known temporary error on your own dataset.
+name: refresh-watch
+title: Refresh-failure watch
+project: powerbi
+status: shadow
+trigger: {poll: refresh_history, every: 10m}
+model: none
+data_classes: [metadata]
+tools: [read_refresh_facts, find_known_fix, notify_me, trigger_refresh]
+steps: agent.recipes.steps.refresh_watch:steps
+context: []
+output: dm

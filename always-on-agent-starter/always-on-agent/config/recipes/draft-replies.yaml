@@ -1,0 +1,13 @@
+# R03 Draft replies, on reply tasks opened by inbox triage. Sonnet when allowed, else Haiku (noted
+# on the card). Sending always needs your approval.
+name: draft-replies
+title: Draft replies
+project: general
+status: shadow
+trigger: {event: mail}
+model: sonnet
+data_classes: [metadata, text]
+tools: [read_mail, read_mail_rules, read_reply_context, save_draft, send_mail]
+steps: agent.recipes.steps.draft_replies:steps
+context: [personal, style, card, summary, last_events]
+output: approval_card

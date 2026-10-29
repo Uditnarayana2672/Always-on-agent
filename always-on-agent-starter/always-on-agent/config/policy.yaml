@@ -14,6 +14,16 @@ tools:
   get_refresh_history: { mode: silent }
   read_sharepoint_list: { mode: silent }
   sql_count: { mode: silent }
+  read_brief_data: { mode: silent }        # recipe views (R01-R06): read-only
+  read_digest_data: { mode: silent }
+  read_mentions: { mode: silent }
+  read_refresh_facts: { mode: silent }
+  read_mail_rules: { mode: silent }
+  read_reply_context: { mode: silent }
+  find_known_fix: { mode: silent }
+  publish_brief: { mode: silent }          # to you only (Slack DM, console)
+  publish_digest: { mode: silent }
+  notify_me: { mode: silent }
   move_mail: { mode: report }
   flag_mail: { mode: report }
   categorise: { mode: report }
@@ -22,7 +32,8 @@ tools:
   add_hold: { mode: report }
   set_flag: { mode: report }               # undo of flag_mail
   discard_own_draft: { mode: report }      # undo of save_draft: only unsent drafts the agent made
-  discard_own_hold: { mode: report }       # undo of add_hold: only agent holds nobody was invited to
+  discard_own_hold: { mode: report }
+  open_reply_task: { mode: report }        # R02: a reply task for a mail that needs an answer       # undo of add_hold: only agent holds nobody was invited to
   update_directory: { mode: report }
   write_memory: { mode: report }
   send_mail: { mode: ask }

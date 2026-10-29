@@ -58,6 +58,9 @@ class Proposal(BaseModel):
     draft: OutboundDraft | None = None  # set for outgoing messages: checked before the card
     recipe: str | None = None  # the recipe that proposed it (shadow mode and audit are per recipe)
     recipe_stage: Literal["live", "shadow"] | None = None
+    # Facts the step's code looked up for the tool's mode_fn (owned dataset, last error code ...).
+    # Set by our own step code from reads, never from fetched text.
+    facts: dict[str, Any] = Field(default_factory=dict)
 
 
 class StepResult(BaseModel):
@@ -143,6 +146,7 @@ class TaskGateContext:
             paused=await self._controls.paused() if self._controls else False,
             participants=participants,
             me=self._me[0] if self._me else None,
+            facts=dict(proposal.facts),
         )
 
 
@@ -396,6 +400,10 @@ def build_task_graph(deps: GraphDeps, checkpointer: Checkpointer) -> CompiledSta
             await deps.ledger.set_next_action(task_id, next_action)
         if needs_you:
             await move(task_id, "needs_you", next_action or "needs you")
+        elif outcomes and outcomes[-1]["status"] == "done" and outcomes[-1]["tool"] in SENDS_MESSAGE:
+            # The ball is in the other person's court; their next message brings the task back.
+            await deps.ledger.set_next_action(task_id, "Sent; waiting for a reply.")
+            await move(task_id, "waiting", "message sent")
         if deps.memory_hooks is not None:
             await deps.memory_hooks.after_run(task_id)
         return {"current": None, "action_id": None}
@@ -417,6 +425,9 @@ def build_task_graph(deps: GraphDeps, checkpointer: Checkpointer) -> CompiledSta
     graph.add_conditional_edges("execute", after_execute)
     graph.add_edge("update_memory", END)
     return graph.compile(checkpointer=checkpointer)
+
+
+SENDS_MESSAGE = frozenset({"send_mail", "post_chat", "add_comment_by_reply"})
 
 
 def _next_action(outcomes: list[dict[str, Any]], stop_reason: str | None) -> tuple[str | None, bool]:

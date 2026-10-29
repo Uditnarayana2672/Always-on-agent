@@ -1,0 +1,2338 @@
+{
+ "status": {
+  "paused": false,
+  "leave": false,
+  "model": "Haiku",
+  "needs_you": 5,
+  "approvals": 5,
+  "phase": "Phase 1 · on your laptop",
+  "fake": true
+ },
+ "brief": {
+  "day_label": "Wed 28 Oct · 09:00 IST brief",
+  "greeting": "Good morning, Udit. 5 things need you.",
+  "paused": false,
+  "last_checkin": "08:58",
+  "next_checkin": "11:00",
+  "open_tasks": 10,
+  "approvals": 5,
+  "model_line": "Haiku, Sonnet for caller drafts",
+  "needs": [
+   {
+    "id": "INC30109981",
+    "title": "PDF rendition missing for SOP-QA-0193",
+    "project": "Doxis",
+    "reason": "Crosses 24 hours at 10:36. Escalation to L2 is drafted."
+   },
+   {
+    "id": "INC30114872",
+    "title": "Cannot see documents in project PX-4471",
+    "project": "Doxis",
+    "reason": "At 19 h. The redirect to the site KM/LBA is drafted."
+   },
+   {
+    "id": "INC30108754",
+    "title": "Request to obsolete an outdated stability protocol",
+    "project": "Doxis",
+    "reason": "No reply since yesterday. Reminder ready for 13:30 IST."
+   },
+   {
+    "id": "REF-0412",
+    "title": "Refresh Global Cockpit (asked by Priya Nair)",
+    "project": "Power BI",
+    "reason": "Priya asked 25 minutes ago. Source changed after the last refresh."
+   },
+   {
+    "id": "ENH-014",
+    "title": "Add a site filter to the Pipeline Tracker overview",
+    "project": "Power BI",
+    "reason": "Marc has waited 2 working days for a reply."
+   }
+  ],
+  "clocks": [
+   {
+    "id": "INC30109981",
+    "title": "PDF rendition missing for SOP-QA-0193",
+    "age_hours": 22.4,
+    "paused": false,
+    "estimated": false
+   },
+   {
+    "id": "INC30114872",
+    "title": "Cannot see documents in project PX-4471",
+    "age_hours": 19.2,
+    "paused": false,
+    "estimated": false
+   },
+   {
+    "id": "INC30108754",
+    "title": "Request to obsolete an outdated stability protocol",
+    "age_hours": 15.3,
+    "paused": false,
+    "estimated": false
+   },
+   {
+    "id": "INC30115230",
+    "title": "Workflow stuck at Quality Review step",
+    "age_hours": 6.1,
+    "paused": false,
+    "estimated": false
+   },
+   {
+    "id": "INC30117002",
+    "title": "Cannot upload files larger than 50 MB",
+    "age_hours": 0.6,
+    "paused": false,
+    "estimated": false
+   }
+  ],
+  "thresholds": [
+   12,
+   18,
+   22
+  ],
+  "powerbi_stats": [
+   {
+    "value": "13 / 14",
+    "label": "datasets normal"
+   },
+   {
+    "value": "41 / 43",
+    "label": "ISMS sites in"
+   },
+   {
+    "value": "2",
+    "label": "enhancements waiting"
+   }
+  ],
+  "powerbi_items": [
+   {
+    "title": "Forecast Hub results table has no new rows since Monday",
+    "meta": "Dataset refresh succeeded, so the SQL load job is the likely cause.",
+    "task_id": "PBI-H03",
+    "severity": "alert"
+   },
+   {
+    "title": "Pipeline Tracker refresh took 42 min",
+    "meta": "The 30-day median is 18 min. No action needed yet.",
+    "task_id": null,
+    "severity": "info"
+   }
+  ],
+  "done": [
+   {
+    "audit_id": 100,
+    "text": "Moved 9 notification emails to Filed/Notifications",
+    "time": "08:30",
+    "ref": "Inbox triage",
+    "undo": "available"
+   },
+   {
+    "audit_id": 101,
+    "text": "Flagged 2 emails from your manager",
+    "time": "08:30",
+    "ref": "Inbox triage",
+    "undo": "available"
+   },
+   {
+    "audit_id": 102,
+    "text": "Created the ledger item and started the clock",
+    "time": "08:25",
+    "ref": "INC30117002",
+    "undo": "available"
+   },
+   {
+    "audit_id": 103,
+    "text": "Compressed INC30101345 into a precedent",
+    "time": "02:10",
+    "ref": "Nightly",
+    "undo": "available"
+   },
+   {
+    "audit_id": 104,
+    "text": "Saved an acknowledgement draft in Outlook",
+    "time": "Tue 18:40",
+    "ref": "ENH-015",
+    "undo": "available"
+   }
+  ],
+  "meetings": [
+   {
+    "start": "11:30",
+    "end": "12:00",
+    "subject": "Doxis support weekly",
+    "join_url": null
+   },
+   {
+    "start": "15:00",
+    "end": "15:30",
+    "subject": "Pipeline Tracker review with Marc",
+    "join_url": null
+   }
+  ],
+  "meetings_note": "Prep briefs 30 min before",
+  "latest_text": null,
+  "connectors_down": []
+ },
+ "tasks": [
+  {
+   "id": "INC30109981",
+   "project": "Doxis",
+   "title": "PDF rendition missing for SOP-QA-0193",
+   "column": "needs",
+   "state": "needs_you",
+   "age_hours": 22.4,
+   "clock": true,
+   "next": "Approve the escalation to Doxis L2",
+   "has_approval": true,
+   "recipe": "Incident intake and triage"
+  },
+  {
+   "id": "INC30114872",
+   "project": "Doxis",
+   "title": "Cannot see documents in project PX-4471",
+   "column": "needs",
+   "state": "needs_you",
+   "age_hours": 19.2,
+   "clock": true,
+   "next": "Approve the KM/LBA redirect",
+   "has_approval": true,
+   "recipe": "KM/LBA redirect and closure"
+  },
+  {
+   "id": "INC30108754",
+   "project": "Doxis",
+   "title": "Request to obsolete an outdated stability protocol",
+   "column": "needs",
+   "state": "needs_you",
+   "age_hours": 15.3,
+   "clock": true,
+   "next": "Approve the day-3 reminder",
+   "has_approval": true,
+   "recipe": "On Hold chaser"
+  },
+  {
+   "id": "REF-0412",
+   "project": "Power BI",
+   "title": "Refresh Global Cockpit (asked by Priya Nair)",
+   "column": "needs",
+   "state": "needs_you",
+   "age_hours": null,
+   "clock": false,
+   "next": "Approve the refresh plan",
+   "has_approval": true,
+   "recipe": "Refresh on request"
+  },
+  {
+   "id": "ENH-014",
+   "project": "Power BI",
+   "title": "Add a site filter to the Pipeline Tracker overview",
+   "column": "needs",
+   "state": "needs_you",
+   "age_hours": null,
+   "clock": false,
+   "next": "No reply for 2 working days: approve the acknowledgement",
+   "has_approval": true,
+   "recipe": "Enhancement request tracker"
+  },
+  {
+   "id": "INC30115230",
+   "project": "Doxis",
+   "title": "Workflow stuck at Quality Review step",
+   "column": "progress",
+   "state": "in_progress",
+   "age_hours": 6.1,
+   "clock": true,
+   "next": "Caller replied at 08:52; re-analysing",
+   "has_approval": false,
+   "recipe": "Incident intake and triage"
+  },
+  {
+   "id": "INC30117002",
+   "project": "Doxis",
+   "title": "Cannot upload files larger than 50 MB",
+   "column": "progress",
+   "state": "in_progress",
+   "age_hours": 0.6,
+   "clock": true,
+   "next": "Precedent search running",
+   "has_approval": false,
+   "recipe": "Incident intake and triage"
+  },
+  {
+   "id": "PBI-H03",
+   "project": "Power BI",
+   "title": "Forecast Hub results table: no new rows since Monday",
+   "column": "progress",
+   "state": "in_progress",
+   "age_hours": null,
+   "clock": false,
+   "next": "Check the SQL load job before anyone asks",
+   "has_approval": false,
+   "recipe": "Refresh health and freshness"
+  },
+  {
+   "id": "PBI-SP10",
+   "project": "Power BI",
+   "title": "ISMS history list: 2 sites missing for October",
+   "column": "waiting",
+   "state": "waiting",
+   "age_hours": null,
+   "clock": false,
+   "next": "Waiting on site contacts; re-check daily",
+   "has_approval": false,
+   "recipe": "SharePoint history completeness"
+  },
+  {
+   "id": "ENH-015",
+   "project": "Power BI",
+   "title": "Show forecast accuracy by quarter in Forecast Hub",
+   "column": "waiting",
+   "state": "waiting",
+   "age_hours": null,
+   "clock": false,
+   "next": "Waiting on Lea to confirm the measure",
+   "has_approval": false,
+   "recipe": "Enhancement request tracker"
+  },
+  {
+   "id": "SCH-01",
+   "project": "Power BI",
+   "title": "Monthly SharePoint completeness check",
+   "column": "scheduled",
+   "state": "scheduled",
+   "age_hours": null,
+   "clock": false,
+   "next": "Runs Mon 3 Nov, 09:00",
+   "has_approval": false,
+   "recipe": "SharePoint history completeness"
+  },
+  {
+   "id": "SCH-02",
+   "project": "Power BI",
+   "title": "Friday enhancement digest",
+   "column": "scheduled",
+   "state": "scheduled",
+   "age_hours": null,
+   "clock": false,
+   "next": "Runs Fri 31 Oct, 16:00",
+   "has_approval": false,
+   "recipe": "Enhancement request tracker"
+  },
+  {
+   "id": "SCH-03",
+   "project": "Doxis",
+   "title": "Weekly KB candidates from closed tickets",
+   "column": "scheduled",
+   "state": "scheduled",
+   "age_hours": null,
+   "clock": false,
+   "next": "Runs Fri 31 Oct, 15:00",
+   "has_approval": false,
+   "recipe": "Incident intake and triage"
+  },
+  {
+   "id": "INC30101345",
+   "project": "Doxis",
+   "title": "Export of native content denied",
+   "column": "done",
+   "state": "done",
+   "age_hours": null,
+   "clock": false,
+   "next": "Closed yesterday · 9 h",
+   "has_approval": false,
+   "recipe": "KM/LBA redirect and closure"
+  }
+ ],
+ "task_details": {
+  "INC30109981": {
+   "task": {
+    "id": "INC30109981",
+    "project": "Doxis",
+    "title": "PDF rendition missing for SOP-QA-0193",
+    "column": "needs",
+    "state": "needs_you",
+    "age_hours": 22.4,
+    "clock": true,
+    "next": "Approve the escalation to Doxis L2",
+    "has_approval": true,
+    "recipe": "Incident intake and triage"
+   },
+   "kind": "Rendition (L2 only)",
+   "recipe_label": "Incident intake and triage",
+   "caller": "Jonas Weber",
+   "affected": "Jonas Weber",
+   "site": "ORB-02 · Orbe Product Development",
+   "priority": "P2",
+   "summary": "The SOP was approved yesterday morning but no PDF rendition was generated. Renditions are handled by L2 only. The agent checked the document state and the rendition queue and drafted the escalation. The ticket crosses 24 hours at 10:36 today.",
+   "checks": [
+    {
+     "label": "Document state",
+     "status": "pass",
+     "detail": "Effective since 27 Oct 10:14 CET"
+    },
+    {
+     "label": "Rendition job in queue",
+     "status": "fail",
+     "detail": "No job found for this document"
+    },
+    {
+     "label": "Other documents on site render",
+     "status": "pass",
+     "detail": "3 checked, all fine"
+    },
+    {
+     "label": "L2-only issue type",
+     "status": "pass",
+     "detail": "Rendition → escalate"
+    }
+   ],
+   "precedents": [
+    {
+     "id": "INC29911802",
+     "text": "Rendition missing after approval; L2 re-queued the job; fixed in 2 h"
+    },
+    {
+     "id": "INC29702266",
+     "text": "Rendition failed on a large Word file; L2 split the file"
+    }
+   ],
+   "events": [
+    {
+     "time": "Tue 12:12",
+     "who": "system",
+     "name": "ServiceNow",
+     "text": "Assignment email received. Ledger item created and the 24-hour clock started."
+    },
+    {
+     "time": "Tue 12:15",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Triage: rendition issue, L2 only. Two precedents found. Missing facts: none."
+    },
+    {
+     "time": "Tue 12:16",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Drafted the escalation email to the Doxis L2 group. Waiting for your approval."
+    },
+    {
+     "time": "Wed 08:00",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Alert: this ticket passed 18 hours and is still waiting on your approval."
+    }
+   ],
+   "approval": {
+    "id": "a2",
+    "task_id": "INC30109981",
+    "task_title": "PDF rendition missing for SOP-QA-0193",
+    "kind": "Email",
+    "to": "Doxis L2 support group",
+    "via": "Outlook",
+    "recipe": "Incident intake and triage",
+    "text": "Subject: INC30109981 – PDF rendition missing for SOP-QA-0193\n\nHi team,\n\nPlease take over this rendition issue. The SOP was approved on 27 Oct at 10:14 CET, but no PDF rendition was generated.\n\nChecks done:\n• Document state: Effective\n• Rendition queue: no job for this document\n• Three other documents on site ORB-02 render normally\n\nCaller: Jonas Weber, site ORB-02. Screenshots are attached to the ticket.\n\nThanks,\nUdit",
+    "content_hash": "hash-a2",
+    "status": "proposed",
+    "edited": false,
+    "expires_at": null,
+    "expires_label": "Expires in 4 h",
+    "urgent": true,
+    "note": null
+   }
+  },
+  "INC30114872": {
+   "task": {
+    "id": "INC30114872",
+    "project": "Doxis",
+    "title": "Cannot see documents in project PX-4471",
+    "column": "needs",
+    "state": "needs_you",
+    "age_hours": 19.2,
+    "clock": true,
+    "next": "Approve the KM/LBA redirect",
+    "has_approval": true,
+    "recipe": "KM/LBA redirect and closure"
+   },
+   "kind": "Access",
+   "recipe_label": "KM/LBA redirect and closure",
+   "caller": "Anna Keller",
+   "affected": "Tomás Rivera (raised on his behalf)",
+   "site": "ORB-02 · Orbe Product Development",
+   "priority": "P3",
+   "summary": "Anna raised this for Tomás, who joined the PX-4471 team last week. Tomás is not a member of ORB-02, the project's leading site, so its documents are hidden by design. Only the site KM or LBA can add him. A redirect message is drafted and waiting for you.",
+   "checks": [
+    {
+     "label": "Affected person identified",
+     "status": "pass",
+     "detail": "Tomás Rivera, named in the description"
+    },
+    {
+     "label": "Member of leading site ORB-02",
+     "status": "fail",
+     "detail": "Not in his site list (screenshot, 08:41)"
+    },
+    {
+     "label": "Project state",
+     "status": "pass",
+     "detail": "Active, not closed"
+    },
+    {
+     "label": "TS/NP flag",
+     "status": "pass",
+     "detail": "Not flagged"
+    },
+    {
+     "label": "CTMF category",
+     "status": "unknown",
+     "detail": "Not visible in the screenshot"
+    }
+   ],
+   "precedents": [
+    {
+     "id": "INC29874410",
+     "text": "New team member could not see project documents; redirected to site LBA; closed same day"
+    },
+    {
+     "id": "INC29655021",
+     "text": "On-behalf access request; KM added the user to the site"
+    },
+    {
+     "id": "INC29790135",
+     "text": "Visibility lost after a site move; needed an L2 remap"
+    }
+   ],
+   "events": [
+    {
+     "time": "Tue 13:52",
+     "who": "system",
+     "name": "ServiceNow",
+     "text": "Assignment email received. Ledger item created and the 24-hour clock started."
+    },
+    {
+     "time": "Tue 13:58",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Triage: access issue raised on behalf of Tomás Rivera (high confidence). Top precedent INC29874410. Missing fact: Tomás's site memberships."
+    },
+    {
+     "time": "Tue 14:20",
+     "who": "you",
+     "name": "You",
+     "text": "Approved and sent the first Teams message asking for a screenshot of Tomás's sites."
+    },
+    {
+     "time": "Wed 08:41",
+     "who": "caller",
+     "name": "Anna Keller",
+     "text": "Here is the screenshot of Tomás's sites."
+    },
+    {
+     "time": "Wed 08:43",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Read the screenshot with local OCR. Tomás is not a member of ORB-02. Verdict: site access request, by design. Source: validated rights matrix."
+    },
+    {
+     "time": "Wed 08:44",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Drafted the KM/LBA redirect for Anna and Tomás. Waiting for your approval."
+    }
+   ],
+   "approval": {
+    "id": "a1",
+    "task_id": "INC30114872",
+    "task_title": "Cannot see documents in project PX-4471",
+    "kind": "Teams message",
+    "to": "Anna Keller, Tomás Rivera",
+    "via": "Incident chat",
+    "recipe": "KM/LBA redirect and closure",
+    "text": "Hi Anna, hi Tomás,\n\nThanks for the screenshot. Tomás isn't a member of site ORB-02 yet, which is the leading site for project PX-4471, so its documents stay hidden until he is added.\n\nSite access is granted by the site's Knowledge Manager or Local Business Administrator. Tomás can request it in Doxis: Access rights → + → search \"ORB-02\" → Create. The request goes to:\n• KM: Lena Schmid\n• LBA: Ravi Menon\n\nOnce the request is raised, may I close this ticket?\n\nThanks,\nUdit",
+    "content_hash": "hash-a1",
+    "status": "proposed",
+    "edited": false,
+    "expires_at": null,
+    "expires_label": "Expires in 23 h",
+    "urgent": false,
+    "note": null
+   }
+  },
+  "INC30108754": {
+   "task": {
+    "id": "INC30108754",
+    "project": "Doxis",
+    "title": "Request to obsolete an outdated stability protocol",
+    "column": "needs",
+    "state": "needs_you",
+    "age_hours": 15.3,
+    "clock": true,
+    "next": "Approve the day-3 reminder",
+    "has_approval": true,
+    "recipe": "On Hold chaser"
+   },
+   "kind": "Delete / obsolete",
+   "recipe_label": "On Hold chaser",
+   "caller": "Sophie Laurent",
+   "affected": "Sophie Laurent",
+   "site": "VRS-01 · Versoix Analytics",
+   "priority": "P3",
+   "summary": "Obsoleting needs the site KM's approval, which Sophie was asked to request. No reply since yesterday afternoon. A second reminder is drafted for the 13:30 IST chase window.",
+   "checks": [
+    {
+     "label": "Document is Effective",
+     "status": "pass",
+     "detail": "Yes"
+    },
+    {
+     "label": "KM approval requested",
+     "status": "unknown",
+     "detail": "Asked Sophie on Tue 17:05; no reply yet"
+    },
+    {
+     "label": "Out of office",
+     "status": "pass",
+     "detail": "No auto-reply seen"
+    }
+   ],
+   "precedents": [
+    {
+     "id": "INC29588120",
+     "text": "Obsolete request; KM approved in workflow; closed after caller confirmed"
+    }
+   ],
+   "events": [
+    {
+     "time": "Tue 17:40",
+     "who": "system",
+     "name": "ServiceNow",
+     "text": "Assignment email received. Clock started."
+    },
+    {
+     "time": "Tue 17:44",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Triage: obsolete request. The site KM must approve. Redirect drafted."
+    },
+    {
+     "time": "Tue 18:05",
+     "who": "you",
+     "name": "You",
+     "text": "Approved and sent the redirect. You set the ticket On Hold in ServiceNow."
+    },
+    {
+     "time": "Wed 08:30",
+     "who": "agent",
+     "name": "Agent",
+     "text": "No reply from Sophie. Drafted the next reminder for the 13:30 IST chase window."
+    }
+   ],
+   "approval": {
+    "id": "a3",
+    "task_id": "INC30108754",
+    "task_title": "Request to obsolete an outdated stability protocol",
+    "kind": "Teams message",
+    "to": "Sophie Laurent",
+    "via": "Incident chat · sends at 13:30 IST",
+    "recipe": "On Hold chaser",
+    "text": "Hi Sophie,\n\nFollowing up on the protocol you asked to obsolete. Could you let me know whether the site KM has approved the obsolete request? Once it is approved I can close this ticket.\n\nThanks,\nUdit",
+    "content_hash": "hash-a3",
+    "status": "proposed",
+    "edited": false,
+    "expires_at": null,
+    "expires_label": "Expires in 22 h",
+    "urgent": false,
+    "note": null
+   }
+  },
+  "REF-0412": {
+   "task": {
+    "id": "REF-0412",
+    "project": "Power BI",
+    "title": "Refresh Global Cockpit (asked by Priya Nair)",
+    "column": "needs",
+    "state": "needs_you",
+    "age_hours": null,
+    "clock": false,
+    "next": "Approve the refresh plan",
+    "has_approval": true,
+    "recipe": "Refresh on request"
+   },
+   "kind": "Refresh request",
+   "recipe_label": "Refresh on request",
+   "caller": "Priya Nair",
+   "affected": "—",
+   "site": "Workspace: KPI Reporting (Prod)",
+   "priority": "—",
+   "summary": "Priya posted the Global Cockpit app link in Teams and asked for a refresh. The source list changed at 08:20, after the 06:00 refresh, so a refresh is useful. Dataflow first, then the dataset.",
+   "checks": [
+    {
+     "label": "Link resolved to a dataset",
+     "status": "pass",
+     "detail": "Global Cockpit (dataset)"
+    },
+    {
+     "label": "Source changed since last refresh",
+     "status": "pass",
+     "detail": "Site KPI history list, 08:20"
+    },
+    {
+     "label": "Refresh already running",
+     "status": "pass",
+     "detail": "No"
+    },
+    {
+     "label": "Daily refresh cap",
+     "status": "pass",
+     "detail": "3 of 8 used today"
+    }
+   ],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Wed 08:36",
+     "who": "caller",
+     "name": "Priya Nair",
+     "text": "Can you refresh this please? https://app.powerbi.com/groups/…/apps/…"
+    },
+    {
+     "time": "Wed 08:37",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Refresh request detected. Resolved the link, checked history and source freshness. Plan ready for your approval."
+    }
+   ],
+   "approval": {
+    "id": "a4",
+    "task_id": "REF-0412",
+    "task_title": "Refresh Global Cockpit (asked by Priya Nair)",
+    "kind": "Power BI refresh",
+    "to": "Global Cockpit (Prod)",
+    "via": "Power BI",
+    "recipe": "Refresh on request",
+    "text": "Plan:\n1. Refresh dataflow \"Site KPI history\" (last run 06:00; source changed 08:20)\n2. Then refresh dataset \"Global Cockpit\"\nRefreshes used today: 3 of 8\n\nReply to Priya in the same chat when done:\n\"Refreshed at {time} IST; source data up to 08:20.\"",
+    "content_hash": "hash-a4",
+    "status": "proposed",
+    "edited": false,
+    "expires_at": null,
+    "expires_label": "Expires in 1 h",
+    "urgent": false,
+    "note": null
+   }
+  },
+  "ENH-014": {
+   "task": {
+    "id": "ENH-014",
+    "project": "Power BI",
+    "title": "Add a site filter to the Pipeline Tracker overview",
+    "column": "needs",
+    "state": "needs_you",
+    "age_hours": null,
+    "clock": false,
+    "next": "No reply for 2 working days: approve the acknowledgement",
+    "has_approval": true,
+    "recipe": "Enhancement request tracker"
+   },
+   "kind": "Enhancement",
+   "recipe_label": "Enhancement request tracker",
+   "caller": "Marc Dubois",
+   "affected": "—",
+   "site": "Report: Pipeline Tracker",
+   "priority": "—",
+   "summary": "Marc asked for a site filter on the overview page. No reply from you yet. An acknowledgement is saved in your Outlook drafts.",
+   "checks": [
+    {
+     "label": "Report found",
+     "status": "pass",
+     "detail": "Pipeline Tracker (Prod)"
+    },
+    {
+     "label": "Duplicate of an open item",
+     "status": "pass",
+     "detail": "No"
+    },
+    {
+     "label": "Deadline mentioned",
+     "status": "unknown",
+     "detail": "Not stated"
+    }
+   ],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Mon 10:05",
+     "who": "system",
+     "name": "Outlook",
+     "text": "Email from Marc Dubois: \"Could we add a site filter to the overview page?\""
+    },
+    {
+     "time": "Mon 10:09",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Logged as ENH-014 and saved an acknowledgement draft in Outlook."
+    },
+    {
+     "time": "Wed 09:00",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Flagged in the morning brief: 2 working days without a reply."
+    }
+   ],
+   "approval": {
+    "id": "a5",
+    "task_id": "ENH-014",
+    "task_title": "Add a site filter to the Pipeline Tracker overview",
+    "kind": "Email (draft in Outlook)",
+    "to": "Marc Dubois",
+    "via": "Outlook",
+    "recipe": "Enhancement request tracker",
+    "text": "Hi Marc,\n\nThanks for the request. I've logged it as ENH-014: add a site filter to the Pipeline Tracker overview page. I'll come back with an estimate by Friday.\n\nBest,\nUdit",
+    "content_hash": "hash-a5",
+    "status": "proposed",
+    "edited": false,
+    "expires_at": null,
+    "expires_label": "Expires in 20 h",
+    "urgent": false,
+    "note": null
+   }
+  },
+  "INC30115230": {
+   "task": {
+    "id": "INC30115230",
+    "project": "Doxis",
+    "title": "Workflow stuck at Quality Review step",
+    "column": "progress",
+    "state": "in_progress",
+    "age_hours": 6.1,
+    "clock": true,
+    "next": "Caller replied at 08:52; re-analysing",
+    "has_approval": false,
+    "recipe": "Incident intake and triage"
+   },
+   "kind": "Workflow",
+   "recipe_label": "Incident intake and triage",
+   "caller": "Elena Rossi",
+   "affected": "Elena Rossi",
+   "site": "ORB-02 · Orbe Product Development",
+   "priority": "P3",
+   "summary": "The Quality Reviewer named on the workflow left the team. Elena answered the question about who should replace him; the agent is checking whether the KM must reassign the step.",
+   "checks": [
+    {
+     "label": "Workflow state",
+     "status": "pass",
+     "detail": "Quality Review, 4 days"
+    },
+    {
+     "label": "Reviewer still active",
+     "status": "fail",
+     "detail": "Account disabled"
+    },
+    {
+     "label": "Replacement named",
+     "status": "pass",
+     "detail": "Elena replied at 08:52"
+    }
+   ],
+   "precedents": [
+    {
+     "id": "INC29932011",
+     "text": "Reviewer left; KM reassigned the step; closed in 1 day"
+    }
+   ],
+   "events": [
+    {
+     "time": "Wed 02:55",
+     "who": "system",
+     "name": "ServiceNow",
+     "text": "Assignment email received. Clock started."
+    },
+    {
+     "time": "Wed 03:01",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Triage: workflow issue. Asked who should take over the review step (approved earlier rule: questions only when evidence is missing)."
+    },
+    {
+     "time": "Wed 08:52",
+     "who": "caller",
+     "name": "Elena Rossi",
+     "text": "Please assign it to Daniel Frei instead."
+    },
+    {
+     "time": "Wed 08:53",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Reply classified: answered the question. Re-running the checks."
+    }
+   ],
+   "approval": null
+  },
+  "INC30117002": {
+   "task": {
+    "id": "INC30117002",
+    "project": "Doxis",
+    "title": "Cannot upload files larger than 50 MB",
+    "column": "progress",
+    "state": "in_progress",
+    "age_hours": 0.6,
+    "clock": true,
+    "next": "Precedent search running",
+    "has_approval": false,
+    "recipe": "Incident intake and triage"
+   },
+   "kind": "Upload",
+   "recipe_label": "Incident intake and triage",
+   "caller": "Karim Haddad",
+   "affected": "Karim Haddad",
+   "site": "SGP-03 · Singapore Quality",
+   "priority": "P4",
+   "summary": "New ticket. Translated from French. The agent is searching precedents.",
+   "checks": [
+    {
+     "label": "Language",
+     "status": "pass",
+     "detail": "French, translated"
+    }
+   ],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Wed 08:24",
+     "who": "system",
+     "name": "ServiceNow",
+     "text": "Assignment email received. Clock started."
+    },
+    {
+     "time": "Wed 08:25",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Translated from French. Classified: upload. Searching precedents."
+    }
+   ],
+   "approval": null
+  },
+  "PBI-H03": {
+   "task": {
+    "id": "PBI-H03",
+    "project": "Power BI",
+    "title": "Forecast Hub results table: no new rows since Monday",
+    "column": "progress",
+    "state": "in_progress",
+    "age_hours": null,
+    "clock": false,
+    "next": "Check the SQL load job before anyone asks",
+    "has_approval": false,
+    "recipe": "Refresh health and freshness"
+   },
+   "kind": "Data freshness",
+   "recipe_label": "Refresh health and freshness",
+   "caller": "Refresh health check",
+   "affected": "—",
+   "site": "Dataset: Forecast Hub",
+   "priority": "—",
+   "summary": "The dataset refreshes fine, but the source table has not grown since Monday. The SQL load job may have stopped.",
+   "checks": [
+    {
+     "label": "Dataset refresh",
+     "status": "pass",
+     "detail": "Succeeded 06:10"
+    },
+    {
+     "label": "Source row growth",
+     "status": "fail",
+     "detail": "0 new rows since Mon"
+    }
+   ],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Wed 08:45",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Freshness check: results table has 0 new rows since Monday. Added to the morning brief."
+    }
+   ],
+   "approval": null
+  },
+  "PBI-SP10": {
+   "task": {
+    "id": "PBI-SP10",
+    "project": "Power BI",
+    "title": "ISMS history list: 2 sites missing for October",
+    "column": "waiting",
+    "state": "waiting",
+    "age_hours": null,
+    "clock": false,
+    "next": "Waiting on site contacts; re-check daily",
+    "has_approval": false,
+    "recipe": "SharePoint history completeness"
+   },
+   "kind": "Completeness check",
+   "recipe_label": "SharePoint history completeness",
+   "caller": "SharePoint check",
+   "affected": "—",
+   "site": "List: ISMS history",
+   "priority": "—",
+   "summary": "41 of 43 sites have entered October rows. Reminders went to the two missing site contacts yesterday.",
+   "checks": [
+    {
+     "label": "Sites present",
+     "status": "unknown",
+     "detail": "41 of 43 (AOA-SG4, EUR-OR7 missing)"
+    }
+   ],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Tue 09:00",
+     "who": "agent",
+     "name": "Agent",
+     "text": "Completeness check: ISMS 41 of 43. Reminders drafted."
+    },
+    {
+     "time": "Tue 09:40",
+     "who": "you",
+     "name": "You",
+     "text": "Approved and sent both reminders."
+    }
+   ],
+   "approval": null
+  },
+  "ENH-015": {
+   "task": {
+    "id": "ENH-015",
+    "project": "Power BI",
+    "title": "Show forecast accuracy by quarter in Forecast Hub",
+    "column": "waiting",
+    "state": "waiting",
+    "age_hours": null,
+    "clock": false,
+    "next": "Waiting on Lea to confirm the measure",
+    "has_approval": false,
+    "recipe": "Enhancement request tracker"
+   },
+   "kind": "Enhancement",
+   "recipe_label": "Enhancement request tracker",
+   "caller": "Lea Novak",
+   "affected": "—",
+   "site": "Report: Forecast Hub",
+   "priority": "—",
+   "summary": "You asked Lea which accuracy measure to use. Waiting for her answer.",
+   "checks": [],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Mon 15:20",
+     "who": "system",
+     "name": "Outlook",
+     "text": "Email from Lea Novak with the request."
+    },
+    {
+     "time": "Tue 18:40",
+     "who": "you",
+     "name": "You",
+     "text": "Sent the acknowledgement and a question about the measure."
+    }
+   ],
+   "approval": null
+  },
+  "SCH-01": {
+   "task": {
+    "id": "SCH-01",
+    "project": "Power BI",
+    "title": "Monthly SharePoint completeness check",
+    "column": "scheduled",
+    "state": "scheduled",
+    "age_hours": null,
+    "clock": false,
+    "next": "Runs Mon 3 Nov, 09:00",
+    "has_approval": false,
+    "recipe": "SharePoint history completeness"
+   },
+   "kind": "Recurring",
+   "recipe_label": "SharePoint history completeness",
+   "caller": "—",
+   "affected": "—",
+   "site": "All history lists",
+   "priority": "—",
+   "summary": "Runs every month before the Global Cockpit refresh, then daily until complete.",
+   "checks": [],
+   "precedents": [],
+   "events": [],
+   "approval": null
+  },
+  "SCH-02": {
+   "task": {
+    "id": "SCH-02",
+    "project": "Power BI",
+    "title": "Friday enhancement digest",
+    "column": "scheduled",
+    "state": "scheduled",
+    "age_hours": null,
+    "clock": false,
+    "next": "Runs Fri 31 Oct, 16:00",
+    "has_approval": false,
+    "recipe": "Enhancement request tracker"
+   },
+   "kind": "Recurring",
+   "recipe_label": "Enhancement request tracker",
+   "caller": "—",
+   "affected": "—",
+   "site": "Enhancement backlog",
+   "priority": "—",
+   "summary": "Status of open enhancement items by requester, sent only to you.",
+   "checks": [],
+   "precedents": [],
+   "events": [],
+   "approval": null
+  },
+  "SCH-03": {
+   "task": {
+    "id": "SCH-03",
+    "project": "Doxis",
+    "title": "Weekly KB candidates from closed tickets",
+    "column": "scheduled",
+    "state": "scheduled",
+    "age_hours": null,
+    "clock": false,
+    "next": "Runs Fri 31 Oct, 15:00",
+    "has_approval": false,
+    "recipe": "Incident intake and triage"
+   },
+   "kind": "Recurring",
+   "recipe_label": "Incident intake and triage",
+   "caller": "—",
+   "affected": "—",
+   "site": "Closed tickets",
+   "priority": "—",
+   "summary": "Lists closed tickets worth turning into a KB article.",
+   "checks": [],
+   "precedents": [],
+   "events": [],
+   "approval": null
+  },
+  "INC30101345": {
+   "task": {
+    "id": "INC30101345",
+    "project": "Doxis",
+    "title": "Export of native content denied",
+    "column": "done",
+    "state": "done",
+    "age_hours": null,
+    "clock": false,
+    "next": "Closed yesterday · 9 h",
+    "has_approval": false,
+    "recipe": "KM/LBA redirect and closure"
+   },
+   "kind": "Access",
+   "recipe_label": "KM/LBA redirect and closure",
+   "caller": "Ben Oduya",
+   "affected": "Ben Oduya",
+   "site": "ORB-02",
+   "priority": "P3",
+   "summary": "By design: export of native files needs the Author role. Redirected to the KM. Ben confirmed and you closed it. Saved as a precedent overnight.",
+   "checks": [],
+   "precedents": [],
+   "events": [
+    {
+     "time": "Tue 08:10",
+     "who": "system",
+     "name": "ServiceNow",
+     "text": "Assignment email received."
+    },
+    {
+     "time": "Tue 17:02",
+     "who": "caller",
+     "name": "Ben Oduya",
+     "text": "Thanks, the KM added me. You can close it."
+    },
+    {
+     "time": "Tue 17:10",
+     "who": "you",
+     "name": "You",
+     "text": "Closed the ticket in ServiceNow."
+    }
+   ],
+   "approval": null
+  }
+ },
+ "approvals": [
+  {
+   "id": "a2",
+   "task_id": "INC30109981",
+   "task_title": "PDF rendition missing for SOP-QA-0193",
+   "kind": "Email",
+   "to": "Doxis L2 support group",
+   "via": "Outlook",
+   "recipe": "Incident intake and triage",
+   "text": "Subject: INC30109981 – PDF rendition missing for SOP-QA-0193\n\nHi team,\n\nPlease take over this rendition issue. The SOP was approved on 27 Oct at 10:14 CET, but no PDF rendition was generated.\n\nChecks done:\n• Document state: Effective\n• Rendition queue: no job for this document\n• Three other documents on site ORB-02 render normally\n\nCaller: Jonas Weber, site ORB-02. Screenshots are attached to the ticket.\n\nThanks,\nUdit",
+   "content_hash": "hash-a2",
+   "status": "proposed",
+   "edited": false,
+   "expires_at": null,
+   "expires_label": "Expires in 4 h",
+   "urgent": true,
+   "note": null
+  },
+  {
+   "id": "a1",
+   "task_id": "INC30114872",
+   "task_title": "Cannot see documents in project PX-4471",
+   "kind": "Teams message",
+   "to": "Anna Keller, Tomás Rivera",
+   "via": "Incident chat",
+   "recipe": "KM/LBA redirect and closure",
+   "text": "Hi Anna, hi Tomás,\n\nThanks for the screenshot. Tomás isn't a member of site ORB-02 yet, which is the leading site for project PX-4471, so its documents stay hidden until he is added.\n\nSite access is granted by the site's Knowledge Manager or Local Business Administrator. Tomás can request it in Doxis: Access rights → + → search \"ORB-02\" → Create. The request goes to:\n• KM: Lena Schmid\n• LBA: Ravi Menon\n\nOnce the request is raised, may I close this ticket?\n\nThanks,\nUdit",
+   "content_hash": "hash-a1",
+   "status": "proposed",
+   "edited": false,
+   "expires_at": null,
+   "expires_label": "Expires in 23 h",
+   "urgent": false,
+   "note": null
+  },
+  {
+   "id": "a4",
+   "task_id": "REF-0412",
+   "task_title": "Refresh Global Cockpit (asked by Priya Nair)",
+   "kind": "Power BI refresh",
+   "to": "Global Cockpit (Prod)",
+   "via": "Power BI",
+   "recipe": "Refresh on request",
+   "text": "Plan:\n1. Refresh dataflow \"Site KPI history\" (last run 06:00; source changed 08:20)\n2. Then refresh dataset \"Global Cockpit\"\nRefreshes used today: 3 of 8\n\nReply to Priya in the same chat when done:\n\"Refreshed at {time} IST; source data up to 08:20.\"",
+   "content_hash": "hash-a4",
+   "status": "proposed",
+   "edited": false,
+   "expires_at": null,
+   "expires_label": "Expires in 1 h",
+   "urgent": false,
+   "note": null
+  },
+  {
+   "id": "a3",
+   "task_id": "INC30108754",
+   "task_title": "Request to obsolete an outdated stability protocol",
+   "kind": "Teams message",
+   "to": "Sophie Laurent",
+   "via": "Incident chat · sends at 13:30 IST",
+   "recipe": "On Hold chaser",
+   "text": "Hi Sophie,\n\nFollowing up on the protocol you asked to obsolete. Could you let me know whether the site KM has approved the obsolete request? Once it is approved I can close this ticket.\n\nThanks,\nUdit",
+   "content_hash": "hash-a3",
+   "status": "proposed",
+   "edited": false,
+   "expires_at": null,
+   "expires_label": "Expires in 22 h",
+   "urgent": false,
+   "note": null
+  },
+  {
+   "id": "a5",
+   "task_id": "ENH-014",
+   "task_title": "Add a site filter to the Pipeline Tracker overview",
+   "kind": "Email (draft in Outlook)",
+   "to": "Marc Dubois",
+   "via": "Outlook",
+   "recipe": "Enhancement request tracker",
+   "text": "Hi Marc,\n\nThanks for the request. I've logged it as ENH-014: add a site filter to the Pipeline Tracker overview page. I'll come back with an estimate by Friday.\n\nBest,\nUdit",
+   "content_hash": "hash-a5",
+   "status": "proposed",
+   "edited": false,
+   "expires_at": null,
+   "expires_label": "Expires in 20 h",
+   "urgent": false,
+   "note": null
+  }
+ ],
+ "recipes": [
+  {
+   "slug": "morning-brief",
+   "name": "Morning brief",
+   "project": "Core",
+   "trigger": "schedule: brief",
+   "trigger_label": "Schedule · weekdays 09:00 IST",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "09:00",
+   "tools": [
+    "read_mail",
+    "read_calendar",
+    "read_chat",
+    "get_refresh_history",
+    "update_ledger"
+   ],
+   "instructions": "Rank what needs me today: replies owed, meetings, deadlines and alerts. Link every item to its source.",
+   "output": "dm",
+   "output_label": "Main DM",
+   "has_steps": true,
+   "file": "recipes/morning-brief.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "inbox-triage",
+   "name": "Inbox triage",
+   "project": "Core",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · Outlook every 10 min",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "08:30",
+   "tools": [
+    "read_mail",
+    "move_mail",
+    "flag_mail"
+   ],
+   "instructions": "File notifications and FYIs. Flag mail from my manager and stakeholders. Never delete.",
+   "output": "dm",
+   "output_label": "Nightly digest",
+   "has_steps": true,
+   "file": "recipes/inbox-triage.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "draft-replies",
+   "name": "Draft replies",
+   "project": "Core",
+   "trigger": "schedule: brief",
+   "trigger_label": "Event · mail that needs a reply",
+   "model": "Sonnet",
+   "status": "Live",
+   "last_run": "08:31",
+   "tools": [
+    "read_mail",
+    "save_draft",
+    "send_mail"
+   ],
+   "instructions": "Draft replies in my style and save them as Outlook drafts. Sending always asks me.",
+   "output": "dm",
+   "output_label": "Outlook drafts + approval card",
+   "has_steps": true,
+   "file": "recipes/draft-replies.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "mention-digest",
+   "name": "Mention digest",
+   "project": "Core",
+   "trigger": "schedule: brief",
+   "trigger_label": "Each check-in",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "08:58",
+   "tools": [
+    "read_chat"
+   ],
+   "instructions": "List unanswered Slack and Teams mentions and DMs, oldest first.",
+   "output": "dm",
+   "output_label": "Check-in message",
+   "has_steps": true,
+   "file": "recipes/mention-digest.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "refresh-watch",
+   "name": "Refresh-failure watch",
+   "project": "Core",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · Power BI every 10 min",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "08:50",
+   "tools": [
+    "get_refresh_history",
+    "trigger_refresh"
+   ],
+   "instructions": "Alert on failed or overrunning refreshes. Retry once only for known transient errors on datasets I own.",
+   "output": "dm",
+   "output_label": "DM alert",
+   "has_steps": true,
+   "file": "recipes/refresh-watch.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "nightly-digest",
+   "name": "Nightly digest",
+   "project": "Core",
+   "trigger": "schedule: brief",
+   "trigger_label": "Schedule · 19:00 IST",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "Tue 19:00",
+   "tools": [
+    "update_ledger"
+   ],
+   "instructions": "List everything done without asking today, each with an undo.",
+   "output": "dm",
+   "output_label": "Main DM",
+   "has_steps": true,
+   "file": "recipes/nightly-digest.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "doxis-triage",
+   "name": "Incident intake and triage",
+   "project": "Doxis",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · ServiceNow emails every 5 min",
+   "model": "Haiku",
+   "status": "Shadow",
+   "last_run": "08:25",
+   "tools": [
+    "read_mail",
+    "search_workbook",
+    "update_ledger",
+    "save_draft",
+    "post_chat",
+    "send_mail"
+   ],
+   "instructions": "Parse the assignment email, pseudonymise names, translate, detect on-behalf requests, classify, search precedents, rank causes and draft only the questions the evidence cannot answer.",
+   "output": "dm",
+   "output_label": "Task thread",
+   "has_steps": true,
+   "file": "recipes/doxis-triage.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "kpi-watchdog",
+   "name": "24-hour KPI watchdog",
+   "project": "Doxis",
+   "trigger": "schedule: brief",
+   "trigger_label": "Schedule · every 10 min + hourly report",
+   "model": "Haiku",
+   "status": "Shadow",
+   "last_run": "08:50",
+   "tools": [
+    "read_report_email",
+    "update_ledger"
+   ],
+   "instructions": "Track each open ticket's age. Note at 12 h, alert at 18 h, urgent at 22 h, with one next action. Block KPI wording in caller drafts.",
+   "output": "dm",
+   "output_label": "DM alert + brief",
+   "has_steps": true,
+   "file": "recipes/kpi-watchdog.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "access-check",
+   "name": "Access investigation",
+   "project": "Doxis",
+   "trigger": "schedule: brief",
+   "trigger_label": "Event · access ticket or screenshot",
+   "model": "Haiku",
+   "status": "Shadow",
+   "last_run": "08:43",
+   "tools": [
+    "ocr_local",
+    "search_workbook",
+    "update_ledger",
+    "save_draft"
+   ],
+   "instructions": "Check the affected person's site, role, project flags and CTMF category against the validated rights matrix. Say which source was used.",
+   "output": "dm",
+   "output_label": "Verdict card",
+   "has_steps": true,
+   "file": "recipes/access-check.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "km-redirect",
+   "name": "KM/LBA redirect and closure",
+   "project": "Doxis",
+   "trigger": "schedule: brief",
+   "trigger_label": "Event · step belongs to the site KM/LBA",
+   "model": "Sonnet",
+   "status": "Shadow",
+   "last_run": "08:44",
+   "tools": [
+    "read_directory",
+    "save_draft",
+    "post_chat",
+    "update_ledger"
+   ],
+   "instructions": "Draft the redirect with the exact Doxis steps and the KM/LBA names. Ask the caller to close. No KPI wording.",
+   "output": "dm",
+   "output_label": "Approval card",
+   "has_steps": true,
+   "file": "recipes/km-redirect.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "onhold-chaser",
+   "name": "On Hold chaser",
+   "project": "Doxis",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · replies every 10 min; chase at 13:30 IST",
+   "model": "Haiku",
+   "status": "Shadow",
+   "last_run": "08:30",
+   "tools": [
+    "read_chat",
+    "read_mail",
+    "save_draft",
+    "post_chat",
+    "update_ledger"
+   ],
+   "instructions": "Classify replies. Draft reminders on day 1, 3 and 5. Treat only an explicit confirmation as fixed.",
+   "output": "dm",
+   "output_label": "Approval card",
+   "has_steps": true,
+   "file": "recipes/onhold-chaser.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "pbi-refresh",
+   "name": "Refresh on request",
+   "project": "Power BI",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · Teams every 5 min for refresh asks",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "08:37",
+   "tools": [
+    "read_chat",
+    "get_refresh_history",
+    "trigger_refresh",
+    "post_chat"
+   ],
+   "instructions": "Find the dataset from the app link, check history, source freshness and the daily cap, and ask me before refreshing.",
+   "output": "dm",
+   "output_label": "Approval card",
+   "has_steps": true,
+   "file": "recipes/pbi-refresh.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "pbi-health",
+   "name": "Refresh health and freshness",
+   "project": "Power BI",
+   "trigger": "schedule: brief",
+   "trigger_label": "Schedule · 08:45 IST daily",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "08:45",
+   "tools": [
+    "get_refresh_history",
+    "sql_count",
+    "read_sharepoint_list"
+   ],
+   "instructions": "Compare today's durations with the 30-day median and check source row growth. Numbers come from code.",
+   "output": "dm",
+   "output_label": "Brief section",
+   "has_steps": true,
+   "file": "recipes/pbi-health.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "pbi-sharepoint",
+   "name": "SharePoint history completeness",
+   "project": "Power BI",
+   "trigger": "schedule: brief",
+   "trigger_label": "Schedule · monthly, then daily",
+   "model": "Haiku",
+   "status": "Live",
+   "last_run": "Tue 09:00",
+   "tools": [
+    "read_sharepoint_list",
+    "save_draft",
+    "post_chat"
+   ],
+   "instructions": "Check every expected site has a row in each history list for the period. Draft reminders for missing sites.",
+   "output": "dm",
+   "output_label": "DM table",
+   "has_steps": true,
+   "file": "recipes/pbi-sharepoint.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "pbi-enhancements",
+   "name": "Enhancement request tracker",
+   "project": "Power BI",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · Outlook every 10 min",
+   "model": "Haiku",
+   "status": "Off",
+   "last_run": "—",
+   "tools": [
+    "read_mail",
+    "update_ledger",
+    "save_draft",
+    "send_mail"
+   ],
+   "instructions": "Turn stakeholder enhancement emails into backlog items and draft acknowledgements. Needs the data rule for email text.",
+   "output": "dm",
+   "output_label": "Backlog + drafts",
+   "has_steps": true,
+   "file": "recipes/pbi-enhancements.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  },
+  {
+   "slug": "pbi-intake",
+   "name": "Teams and meeting intake",
+   "project": "Power BI",
+   "trigger": "schedule: brief",
+   "trigger_label": "Poll · chats every 10 min; 30 min after meetings",
+   "model": "Haiku",
+   "status": "Off",
+   "last_run": "—",
+   "tools": [
+    "read_chat",
+    "read_calendar",
+    "update_ledger"
+   ],
+   "instructions": "Pull Power BI issues and my action items out of chats and transcripts. Needs the data rule for chat text.",
+   "output": "dm",
+   "output_label": "DM list",
+   "has_steps": true,
+   "file": "recipes/pbi-intake.yaml",
+   "error": null,
+   "runs": 0,
+   "would_do": 0
+  }
+ ],
+ "tools": [
+  {
+   "name": "read_mail",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "search_mail",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "read_report_email",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "read_chat",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "read_calendar",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "search_workbook",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "ocr_local",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "read_directory",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "get_refresh_history",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "read_sharepoint_list",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "sql_count",
+   "mode": "Silent",
+   "locked": false
+  },
+  {
+   "name": "move_mail",
+   "mode": "Report",
+   "locked": false
+  },
+  {
+   "name": "flag_mail",
+   "mode": "Report",
+   "locked": false
+  },
+  {
+   "name": "save_draft",
+   "mode": "Report",
+   "locked": false
+  },
+  {
+   "name": "update_ledger",
+   "mode": "Report",
+   "locked": false
+  },
+  {
+   "name": "add_hold",
+   "mode": "Report",
+   "locked": false
+  },
+  {
+   "name": "send_mail",
+   "mode": "Ask",
+   "locked": false
+  },
+  {
+   "name": "post_chat",
+   "mode": "Ask",
+   "locked": false
+  },
+  {
+   "name": "trigger_refresh",
+   "mode": "Ask",
+   "locked": false
+  },
+  {
+   "name": "edit_shared_list",
+   "mode": "Ask",
+   "locked": false
+  },
+  {
+   "name": "delete_item",
+   "mode": "Hand off",
+   "locked": true
+  },
+  {
+   "name": "change_ticket_state",
+   "mode": "Hand off",
+   "locked": true
+  }
+ ],
+ "activity": [
+  {
+   "audit_id": 200,
+   "time": "08:58",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "Check-in",
+   "action": "Polled Outlook, Teams and Power BI",
+   "tool": "read_mail, read_chat",
+   "mode": "Silent",
+   "result": "4 new items",
+   "undo": "none"
+  },
+  {
+   "audit_id": 201,
+   "time": "08:53",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "INC30115230",
+   "action": "Classified Elena's reply as \"answered the question\"",
+   "tool": "read_chat",
+   "mode": "Silent",
+   "result": "Re-analysis queued",
+   "undo": "none"
+  },
+  {
+   "audit_id": 202,
+   "time": "08:45",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "Refresh health",
+   "action": "Computed durations and freshness for 14 datasets",
+   "tool": "get_refresh_history, sql_count",
+   "mode": "Silent",
+   "result": "1 slow, 1 stale",
+   "undo": "none"
+  },
+  {
+   "audit_id": 203,
+   "time": "08:44",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "INC30114872",
+   "action": "Drafted the KM/LBA redirect",
+   "tool": "save_draft",
+   "mode": "Ask",
+   "result": "Waiting for approval",
+   "undo": "none"
+  },
+  {
+   "audit_id": 204,
+   "time": "08:43",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "INC30114872",
+   "action": "Read a screenshot with local OCR",
+   "tool": "ocr_local",
+   "mode": "Silent",
+   "result": "6 fields extracted",
+   "undo": "none"
+  },
+  {
+   "audit_id": 205,
+   "time": "08:37",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "REF-0412",
+   "action": "Prepared a refresh plan for Global Cockpit",
+   "tool": "get_refresh_history",
+   "mode": "Ask",
+   "result": "Waiting for approval",
+   "undo": "none"
+  },
+  {
+   "audit_id": 206,
+   "time": "08:30",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "Inbox triage",
+   "action": "Moved 9 notification emails to Filed/Notifications",
+   "tool": "move_mail",
+   "mode": "Report",
+   "result": "Done",
+   "undo": "available"
+  },
+  {
+   "audit_id": 207,
+   "time": "08:30",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "Inbox triage",
+   "action": "Flagged 2 emails from your manager",
+   "tool": "flag_mail",
+   "mode": "Report",
+   "result": "Done",
+   "undo": "available"
+  },
+  {
+   "audit_id": 208,
+   "time": "08:25",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "INC30117002",
+   "action": "Created the ledger item and started the clock",
+   "tool": "update_ledger",
+   "mode": "Report",
+   "result": "Done",
+   "undo": "available"
+  },
+  {
+   "audit_id": 209,
+   "time": "07:00",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "KPI watchdog",
+   "action": "Matched the hourly ServiceNow report to the ledger",
+   "tool": "read_report_email",
+   "mode": "Silent",
+   "result": "7 open tickets, 0 unknown",
+   "undo": "none"
+  },
+  {
+   "audit_id": 210,
+   "time": "02:10",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "Nightly",
+   "action": "Compressed INC30101345 into a precedent",
+   "tool": "write_memory",
+   "mode": "Report",
+   "result": "Done",
+   "undo": "available"
+  },
+  {
+   "audit_id": 211,
+   "time": "Tue 18:40",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "ENH-015",
+   "action": "Saved an acknowledgement draft in Outlook",
+   "tool": "save_draft",
+   "mode": "Report",
+   "result": "Done",
+   "undo": "available"
+  },
+  {
+   "audit_id": 212,
+   "time": "Tue 17:05",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "INC30108754",
+   "action": "Sent the day-1 reminder (you approved)",
+   "tool": "post_chat",
+   "mode": "Ask",
+   "result": "Sent",
+   "undo": "none"
+  },
+  {
+   "audit_id": 213,
+   "time": "Tue 16:12",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "Policy gate",
+   "action": "Stopped a reply to an address outside the company",
+   "tool": "send_mail",
+   "mode": "Hand off",
+   "result": "Handed to you",
+   "undo": "none"
+  },
+  {
+   "audit_id": 214,
+   "time": "Tue 14:20",
+   "at": "2026-10-28T03:00:00Z",
+   "ref": "INC30114872",
+   "action": "Sent the first Teams message (you approved)",
+   "tool": "post_chat",
+   "mode": "Ask",
+   "result": "Sent",
+   "undo": "none"
+  }
+ ],
+ "workers": {
+  "coordinator": "Watching Outlook, Teams, Power BI",
+  "queue": 2,
+  "workers": [
+   {
+    "name": "Worker 1",
+    "busy": true,
+    "doing": "INC30117002 · precedent search",
+    "note": "14 s · Haiku"
+   },
+   {
+    "name": "Worker 2",
+    "busy": false,
+    "doing": "Idle",
+    "note": "—"
+   },
+   {
+    "name": "Worker 3",
+    "busy": true,
+    "doing": "PBI-H03 · SQL row count",
+    "note": "3 s · code only"
+   },
+   {
+    "name": "Worker 4",
+    "busy": false,
+    "doing": "Idle",
+    "note": "Next: INC30115230 · reply received"
+   }
+  ]
+ },
+ "memory": {
+  "personal": {
+   "section": "personal",
+   "profile": "Udit · App developer · Bangalore (IST)\nSupports Doxis (RDDMS) incidents and Power BI reports for the client\nWorking hours 09:00–18:30 IST, Mon–Fri\nMost callers work on CET",
+   "preferences": "Keep caller messages short; offer a with-steps version\nSign caller messages \"Thanks, Udit\"\nNever mention the 24-hour KPI to callers\nBatch non-urgent items into the next check-in\nAt most 6 pushes a day",
+   "style_samples": 24,
+   "directory": [],
+   "lessons": [],
+   "sources": []
+  },
+  "directory": {
+   "section": "directory",
+   "profile": null,
+   "preferences": null,
+   "lessons": [],
+   "sources": [],
+   "directory": [
+    {
+     "site": "ORB-02",
+     "name": "Orbe Product Development",
+     "km": "Lena Schmid",
+     "lba": "Ravi Menon",
+     "last_checked": "12 Oct",
+     "stale": false,
+     "source": "Screenshot"
+    },
+    {
+     "site": "VRS-01",
+     "name": "Versoix Analytics",
+     "km": "Marta Silva",
+     "lba": "Jan Kowalski",
+     "last_checked": "02 Oct",
+     "stale": false,
+     "source": "Functional owner list"
+    },
+    {
+     "site": "SGP-03",
+     "name": "Singapore Quality",
+     "km": "Mei Tan",
+     "lba": "Arjun Pillai",
+     "last_checked": "18 Sep",
+     "stale": false,
+     "source": "Screenshot"
+    },
+    {
+     "site": "MRS-04",
+     "name": "Marysville Packaging",
+     "km": "Grace Miller",
+     "lba": "—",
+     "last_checked": "04 Jun",
+     "stale": true,
+     "source": "Functional owner list"
+    },
+    {
+     "site": "KON-01",
+     "name": "Konolfingen Dairy R&D",
+     "km": "Urs Baumann",
+     "lba": "Nina Graf",
+     "last_checked": "21 Oct",
+     "stale": false,
+     "source": "Screenshot"
+    }
+   ]
+  },
+  "lessons": {
+   "section": "lessons",
+   "profile": null,
+   "preferences": null,
+   "directory": [],
+   "sources": [],
+   "lessons": [
+    {
+     "id": "l1",
+     "text": "For Doxis access tickets, check the affected person's sites before asking the caller anything.",
+     "source": "You edited 3 drafts on INC30101345 and INC30098812 the same way",
+     "status": "proposed"
+    },
+    {
+     "id": "l2",
+     "text": "Never cc the Doxis L2 group on the first message to a caller.",
+     "source": "You removed the cc on 2 approvals",
+     "status": "proposed"
+    },
+    {
+     "id": "l3",
+     "text": "Sign caller messages \"Thanks, Udit\", not \"Best regards\".",
+     "source": "You changed the sign-off on 4 drafts",
+     "status": "proposed"
+    },
+    {
+     "id": "l4",
+     "text": "Refresh requests from Priya Nair are always for Global Cockpit (Prod).",
+     "source": "Approved 14 Oct",
+     "status": "approved"
+    },
+    {
+     "id": "l5",
+     "text": "Send chase reminders only inside the 13:30–21:30 IST window.",
+     "source": "Approved 20 Oct",
+     "status": "approved"
+    }
+   ]
+  },
+  "sources": {
+   "section": "sources",
+   "profile": null,
+   "preferences": null,
+   "directory": [],
+   "lessons": [],
+   "sources": [
+    {
+     "source": "Doxis incident workbook (L2 history)",
+     "items": 408,
+     "last_indexed": "21 Oct"
+    },
+    {
+     "source": "Closed tickets saved as precedents",
+     "items": 37,
+     "last_indexed": "Today 02:10"
+    }
+   ]
+  }
+ },
+ "connectors": [
+  {
+   "name": "Outlook mail",
+   "status": "ok",
+   "status_label": "Connected",
+   "via": "Microsoft Graph, client tenant",
+   "can": [
+    "Read and search mail",
+    "Move, flag, save drafts (Report)",
+    "Send only after approval (Ask)"
+   ],
+   "scopes": "Mail.Read · Mail.ReadWrite · Mail.Send",
+   "detail": null
+  },
+  {
+   "name": "Outlook calendar",
+   "status": "ok",
+   "status_label": "Connected",
+   "via": "Microsoft Graph",
+   "can": [
+    "Read today's meetings for prep",
+    "Tentative holds on your own calendar"
+   ],
+   "scopes": "Calendars.Read",
+   "detail": null
+  },
+  {
+   "name": "Microsoft Teams",
+   "status": "part",
+   "status_label": "Read and send",
+   "via": "Graph, polled every 5 min",
+   "can": [
+    "Read chats and mentions",
+    "Post in incident chats after approval",
+    "Meeting transcripts: waiting for admin consent"
+   ],
+   "scopes": "Chat.Read · ChatMessage.Send",
+   "detail": null
+  },
+  {
+   "name": "Slack",
+   "status": "ok",
+   "status_label": "Connected",
+   "via": "Socket Mode, no public URL needed",
+   "can": [
+    "Your main DM and approval cards",
+    "Mention digest"
+   ],
+   "scopes": "Bot in your workspace",
+   "detail": null
+  },
+  {
+   "name": "Power BI",
+   "status": "ok",
+   "status_label": "Connected",
+   "via": "REST API, delegated as you",
+   "can": [
+    "Refresh history and schedules",
+    "Trigger refreshes after approval",
+    "Execute Queries: blocked by tenant"
+   ],
+   "scopes": "Dataset.ReadWrite · Dataflow.ReadWrite · Report.Read",
+   "detail": null
+  },
+  {
+   "name": "SharePoint lists",
+   "status": "ok",
+   "status_label": "Read only",
+   "via": "Graph",
+   "can": [
+    "Read history lists for completeness checks"
+   ],
+   "scopes": "Sites.Read.All",
+   "detail": null
+  },
+  {
+   "name": "ServiceNow",
+   "status": "part",
+   "status_label": "No API · email adapter",
+   "via": "Notification emails + hourly report",
+   "can": [
+    "New tickets from assignment emails",
+    "True state from the hourly scheduled report",
+    "Comments by replying to the notification email (to test)",
+    "State changes: you, in ServiceNow"
+   ],
+   "scopes": "Browser read access is planned for Phase 4",
+   "detail": null
+  },
+  {
+   "name": "Doxis webCube",
+   "status": "pend",
+   "status_label": "No API · screenshots",
+   "via": "Local OCR on this laptop",
+   "can": [
+    "You share screenshots; fields are read locally",
+    "Read-only browser access needs client approval"
+   ],
+   "scopes": "Phase 4",
+   "detail": null
+  },
+  {
+   "name": "SQL (Pipeline Tracker, Forecast Hub)",
+   "status": "pend",
+   "status_label": "Waiting for login",
+   "via": "Read-only login, counts and dates only",
+   "can": [
+    "Row counts and latest load date"
+   ],
+   "scopes": "Needs sign-off from the database owner",
+   "detail": null
+  },
+  {
+   "name": "ICA gateway",
+   "status": "ok",
+   "status_label": "Connected",
+   "via": "Claude models",
+   "can": [
+    "Haiku: default for every run",
+    "Sonnet: caller drafts and long transcripts",
+    "Data rule: metadata only until approved"
+   ],
+   "scopes": "Key stored in Windows Credential Manager",
+   "detail": null
+  }
+ ],
+ "settings": {
+  "work_start": "09:00",
+  "work_end": "18:30",
+  "brief": "09:00",
+  "nightly_digest": "19:00",
+  "checkin_every_minutes": 120,
+  "max_pushes_per_day": 6,
+  "quiet_start": "21:30",
+  "quiet_end": "08:30",
+  "default_model": "Haiku",
+  "sonnet_for": [
+   "caller_drafts",
+   "long_transcripts"
+  ],
+  "sonnet_daily_limit": 40,
+  "data_rule": "metadata",
+  "data_rule_approved": false,
+  "policy": [
+   {
+    "key": "read",
+    "label": "Read mail, chats, reports and files",
+    "mode": "Silent",
+    "options": [
+     "Silent",
+     "Report",
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "file_mail",
+    "label": "File or flag your own mail",
+    "mode": "Report",
+    "options": [
+     "Report",
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "save_draft",
+    "label": "Save a draft",
+    "mode": "Report",
+    "options": [
+     "Report",
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "calendar",
+    "label": "Add a task or a hold on your own calendar",
+    "mode": "Report",
+    "options": [
+     "Report",
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "retry_refresh",
+    "label": "Retry your own failed refresh (known transient error)",
+    "mode": "Report",
+    "options": [
+     "Report",
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "send",
+    "label": "Send an email or chat message",
+    "mode": "Ask",
+    "options": [
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": true,
+    "tools": []
+   },
+   {
+    "key": "refresh",
+    "label": "Trigger a Prod refresh",
+    "mode": "Ask",
+    "options": [
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "shared_edit",
+    "label": "Edit a shared list or document",
+    "mode": "Ask",
+    "options": [
+     "Report",
+     "Ask"
+    ],
+    "locked": false,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "ticket_state",
+    "label": "Change a ServiceNow ticket state",
+    "mode": "Hand off",
+    "options": [
+     "Hand off"
+    ],
+    "locked": true,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "delete",
+    "label": "Delete anything",
+    "mode": "Hand off",
+    "options": [
+     "Hand off"
+    ],
+    "locked": true,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "outside",
+    "label": "Message anyone outside the company",
+    "mode": "Hand off",
+    "options": [
+     "Hand off"
+    ],
+    "locked": true,
+    "reaches_people": false,
+    "tools": []
+   },
+   {
+    "key": "access",
+    "label": "Grant access",
+    "mode": "Hand off",
+    "options": [
+     "Hand off"
+    ],
+    "locked": true,
+    "reaches_people": false,
+    "tools": []
+   }
+  ]
+ }
+}

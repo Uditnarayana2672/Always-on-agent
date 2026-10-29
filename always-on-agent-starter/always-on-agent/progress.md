@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.14 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
+- Next prompt: 1.18 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
 - Last updated: 2026-10-29
 
 ---
@@ -46,10 +46,10 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [!] | 1.11 Slack channel | A04, F14 | 2026-10-29: `channels/slack_bot.py`, `cards.py`, `router.py`, `commands.py`, `email_self.py`; snapshot, compare-and-set, batching and fallback tests green. Needs you: `agentd run --fake --real-slack` (blocked on Q5) |
 | [!] | 1.12 Teams adapter and notifications | A03, F14 | 2026-10-29: `adapters/teams.py`, `channels/teams_notify.py`; respx + contract tests green. Needs you: doctor Teams read (blocked on Q3) |
 | [!] | 1.13 Power BI adapter | A05 | 2026-10-29: `adapters/powerbi.py` + refresh poller; link formats, UTC-day cap, running, 403 hand-off tests green. Needs you: doctor groups + one history (blocked on Q3/Q9) |
-| [ ] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | |
-| [ ] | 1.15 Console API | F15 | |
-| [ ] | 1.16 Console UI | F15 | |
-| [ ] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | |
+| [x] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | 2026-10-29: `config/recipes/*.yaml`, `recipes/steps/*`, `recipes/views.py`, `runtime/assembly.py`, `runtime/fake.py`; 25 recipe tests + fake-day test; `agentd run --fake --demo-only` posts brief, check-in and digest to the fake Slack DM |
+| [x] | 1.15 Console API | F15 | 2026-10-29: `api/{app,auth,models,service,stream,server}.py`, `runtime/settings.py`; 20 API tests; `agentd console` prints the one-time link; `agentd run --fake` serves the console on 127.0.0.1:8765 |
+| [x] | 1.16 Console UI | F15 | 2026-10-29: `console/src` (shell, 10 pages, live stream); 23 Vitest page tests; Playwright: 12 pixel comparisons with the prototype (9 pages at 1440 px, 3 at 400 px; all within 0.1 %, tasks and connectors identical) and the smoke test approving a drafted reply on `agentd run --fake --live-recipes` |
+| [!] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | 2026-10-29: `runtime/supervisor.py` (lock, 30 s heartbeat file, wake catch-up, drain), `runtime/health.py` (incidents said once), `runtime/real.py` (`agentd run` on whatever is set up), `scripts/install_task.ps1`, `agentd status`; 14 tests. Needs you: run `scripts\install_task.ps1 -StartNow` on the laptop, then sleep, unlock and check `uv run agentd status` |
 | [ ] | 1.18 End-to-end run and Phase 1 exit check | all | |
 
 **Phase 1 gate:** two working weeks of real use with no action outside its mode; brief read on most days.
@@ -117,6 +117,7 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | Q11 | Laptop lock and sleep timers | Display off and sleep after 5 min on AC, 3 min on battery; screen locks after 15 min by policy (`InactivityTimeoutSecs`). Sleep after 5 min stops the agent when idle | 2026-10-28 |
 | Q12 | Does Teams keep the hidden `agent:<hash>` span on posted chat messages? | Unknown: `find_tagged` falls back to "same text from you in the chat's latest 50"; check with the first real post after Q3 | |
 | Q13 | Power BI shared-capacity cap: confirm the day is counted in UTC | Assumed UTC (counts reset 05:30 IST), per the service's refresh limits; `refresh_cap()` reports `resets_at`. Verify with the first real cap refusal | |
+| Q14 | A reply drafted by the model is triggered by fetched content, so even `save_draft` (Report) asks first: one reply needs two approvals (save, then send). Keep, or let a draft into your own Drafts folder stay Report? | Kept as is (golden rule 4) until you decide | 2026-10-29 |
 
 ## Blockers
 
@@ -127,7 +128,7 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-28 | Laptop sleeps after 5 min idle on AC (lock 15 min by policy) | Udit / IT | F01 always-on running; change sleep on AC to Never or ask IT |
 | 2026-10-28 | ICA Claude models all fail: `BedrockException Invalid Authentication` (ICA-side) | ICA support | 0.4 spike with Claude |
 | 2026-10-28 | Team frontier budget is 0 of 0 (resets 2 Nov). Of the "free" models only Gemma 4 answers; Llama 4 and Granite are rejected as frontier | Udit / team admin | Non-Gemma models |
-| 2026-10-29 | `backend/src/agent/memory/` (prompt 1.8) was never committed: `.gitignore` had `memory/`, which also matched it. Fresh checkouts fail `tests/recipes` and `agentd run`. `.gitignore` now ignores only the root `/memory/` | Udit: commit `backend/src/agent/memory/` and `backend/tests/memory/` from the laptop | 1.8 in git, recipe tests, `agentd run --fake` |
+| ~~2026-10-29~~ | Resolved 2026-10-29 (the memory package is on main). Was: `backend/src/agent/memory/` (prompt 1.8) was never committed: `.gitignore` had `memory/`, which also matched it. Fresh checkouts fail `tests/recipes` and `agentd run`. `.gitignore` now ignores only the root `/memory/` | Udit: commit `backend/src/agent/memory/` and `backend/tests/memory/` from the laptop | 1.8 in git, recipe tests, `agentd run --fake` |
 | 2026-10-28 | ICA API key (new, ends d2ce) — check expiry on the ICA page | Udit | All model calls after it expires |
 
 ## Decisions
@@ -273,6 +274,41 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | Notifications to the user (DMs, self chat, email to self) are channel sends, not tools: their recipient is fixed by config | They reach only the user; approvals still gate everything that reaches others |
 | 2026-10-29 | `agentd run --fake --real-slack` posts one test approval in the real DM against a temporary database and the fake Teams chat | Prompt 1.11 check without sending anything real |
 | 2026-10-29 | `test_pool_state_shows_current_work` waits for the step, not just the task | It raced on main too (the worker shows the task before the handler names its step) |
+| 2026-10-29 | Scheduled recipes read through Silent view tools (`read_brief_data`, `read_digest_data`, `read_mentions`, `read_refresh_facts`, `read_mail_rules`, `read_reply_context`, `find_known_fix`) and publish through Silent `publish_brief`, `publish_digest`, `notify_me` | Steps have no database; reads stay gated and audited; publishing reaches only the user (R01 "S") |
+| 2026-10-29 | Intake events that match poll/event recipes but belong to no task queue a task-less job (schedule "event") with only the event id; the runner loads the event | Inbox triage and refresh watch act on mail and refreshes outside any task; mail text never sits in the job queue |
+| 2026-10-29 | R02 needs-reply opens an RPL-#### reply task (`open_reply_task`, Report) linked to the conversation, with the mail's people as participants; R03 runs on it | Sending needs an approval, which needs a task; participants keep the gate's stranger rule meaningful |
+| 2026-10-29 | A model answer whose schema is closed (Literal, bool, int, float fields only) does not flag later proposals as triggered by fetched content | No words from the mail reach any argument; R02's moves and flags stay Report as architecture R02 says. Free-text answers still force Ask |
+| 2026-10-29 | Proposals carry `facts` from step code (owned dataset, error code, retries today) into the gate context; task-less Ask checks use the tool's mode_fn | R05's single retry is Report only when code-read facts say so |
+| 2026-10-29 | StepContext gained `outcomes` (with results), `memo` between turns, `last_tier`; `Outbox.result_of` | R03 saves the draft, then proposes the send with its id; Haiku drafts are marked |
+| 2026-10-29 | `SendMail.drafted_on`; the approval card notes "Drafted on Haiku" | Prompt 1.14 R03 |
+| 2026-10-29 | Brief: code ranks (connections, clocks past a mark, needs you, stalled, replies owed, Power BI, meetings); the model may only reword lines keeping ids and numbers and the line count; missed previous work day said at the top (weekends skipped) | E07/E09; nothing invented |
+| 2026-10-29 | Triage rules: manager (flag, never moved), auto-replies/bounces, invitations (categorise only), newsletters, notification senders, protected (untouched); categories are added to the user's, never replaced; mail already filed or sent by the user is skipped; task mail gets rules only | Edge cases beyond architecture R02 |
+| 2026-10-29 | Refresh retries count every attempt today, failed ones included | "One retry" means one try |
+| 2026-10-29 | `RecordedModel` with no answer left raises `ModelUnavailable` | Steps take their code-only path, as in an outage |
+| 2026-10-29 | `mail.manager`, `newsletter_senders`, `notification_senders`, `folder_*` config | R02 sender rules |
+| 2026-10-29 | `runtime/assembly.Runtime` wires every part once (F01 order); `agentd run --fake` builds it on FakeWorld with a clock starting at the fixtures' Wednesday | One wiring for the real run, the fake run, the API and tests |
+| 2026-10-29 | Console session: random token in Credential Manager (`console_session`); `agentd console` writes a one-time code (sha256 digest, 10 min) into the agent's kv; the running agentd redeems it and sets an HttpOnly SameSite=Strict cookie. Every /api route needs the cookie or `X-Agent-Token`; writes also need `X-Agent-Request`; Host must be 127.0.0.1/localhost (no DNS rebinding); a foreign Origin is refused; no CORS | Prompt 1.15 item 2, plus CSRF and rebinding cases the architecture does not name |
+| 2026-10-29 | Settings changes are kv overrides (`settings.overrides`, `settings.policy`) over config.yaml and policy.yaml, applied at start and live (scheduler, clock, push cap, model routing, registry policy) | The files stay the reviewed baseline; a restart keeps the user's choices |
+| 2026-10-29 | The Settings policy table has the prototype's plain rows, each over a set of tools. Hand off rows are fixed; "Send an email or chat message" is fixed at Ask; writes go no lower than Report (a Silent write would vanish from the digest and its undo); "Trigger a Prod refresh" is fixed at Ask and the "Retry your own failed refresh" row switches `powerbi.retry_own_transient` | Golden rules 2 and 3; a mode_fn cannot be overridden downwards |
+| 2026-10-29 | `/api/stream` sends only kinds and ids (task, approval, activity, worker, control); the console refetches. A watcher compares a database signature every second while a browser is connected, so worker, Slack and scheduler changes show up too | No message text on the stream; one code path for every change |
+| 2026-10-29 | Console recipe saves merge into the YAML file (steps, data classes, context, comments kept), validate against RecipeSpec, refuse Hand off tools, and force new recipes to Shadow; a status change rewrites only the `status:` line. `title:` added to RecipeSpec for the console name | Prompt 1.16 editor; nothing the console sends can widen a recipe |
+| 2026-10-29 | "Test on a sample" runs the recipe harness on fixture data in a throwaway database | Never touches real systems |
+| 2026-10-29 | Marking a task done invalidates its open approvals at once | A closed task must not send anything later |
+| 2026-10-29 | Console: the prototype's CSS ported line for line (`console/src/styles.css`) with the same class names, instead of `@carbon/react` components; `@carbon/react` and `@carbon/styles` removed; IBM Plex comes from `@ibm/plex-sans` and `@ibm/plex-mono` (Carbon's own font packages), bundled so the console never calls a font CDN | Prompt 1.16 asks to match the prototype, which is hand-written Carbon-styled CSS; Carbon components render differently. Pixel tests hold the match |
+| 2026-10-29 | Pixel comparison renders the prototype in standards mode (a doctype is added) | The file has no doctype; opened directly, Chromium uses quirks mode (taller table rows). Hosted, it gets a skeleton like the console |
+| 2026-10-29 | Console dev/test dependencies: `@tanstack/react-query` (stack), `vitest`, `jsdom`, Testing Library, `@playwright/test` 1.63 (the preinstalled Chromium) | Stack table: TanStack Query, Vitest + RTL, Playwright |
+| 2026-10-29 | `agentd run --fake --live-recipes`: recipes run Live against the fakes, with a rule-based `DemoModel` (triage by request words, a short holding reply); default `--fake` stays Shadow | The console demo and the smoke test need real approval cards; nothing real is reachable in fake mode |
+| 2026-10-29 | After an approved message is sent (send_mail, post_chat, ServiceNow comment), the task moves to Waiting on others with "Sent; waiting for a reply."; the next message from them wakes it | It stayed In progress with nothing to do; matches the prototype |
+| 2026-10-29 | A console message is in the task's thread at once (same source ref as the worker's record, so never twice) | It used to appear only after a worker ran |
+| 2026-10-29 | The console words ledger and graph notes in plain language ("Moved to Waiting on others", "Would have done: flag the mail (Shadow: logged only).") | CLAUDE.md: no internal names in user-facing text |
+| 2026-10-29 | Console edge cases: signed-out screen with the `agentd console` hint; "Not reachable" status when agentd is down; stream reconnect refetches everything; stale approval (409) shows the server's reason and reloads; edits carry the hash the user saw; reset asks to pause first; locked and people-facing policy rows cannot be changed; project filter remembered per browser | Beyond the prototype, which has no server |
+| 2026-10-29 | Single instance through an OS file lock on `<data dir>/agentd.lock` (msvcrt on Windows, flock elsewhere); the heartbeat is a separate JSON file written atomically every 30 s | The OS frees the lock when the process dies, so a crash never leaves a stale lock; status can read the heartbeat while the lock is held |
+| 2026-10-29 | Wake detection is wall-clock: a gap of more than 90 s between 30 s beats catches up from the last beat (in the runtime's own time) and checks health at once; the scheduler's own 60 s DB heartbeat still catches gaps too | Sleep stops the event loop; the gap is the only reliable signal on a laptop |
+| 2026-10-29 | `agentd status` exits 0 running, 1 not running, 2 not responding (lock held, no beat for 2 min) | Usable from scripts and Task Scheduler checks |
+| 2026-10-29 | Health incidents have stable keys and are announced once, in one DM per check that lists only the new ones; cleared incidents are dropped. Failed jobs and missed schedules are info only (the worker pool and the next run already say so); setup gaps ("Microsoft 365: no app registration") are info | One DM per incident, not per check (prompt 1.17) |
+| 2026-10-29 | `agentd run` (real) starts with whatever is configured: Graph adapters once `graph.client_id` is set, Outlook COM on Windows otherwise, the ICA model when its URL and key exist, Slack when its id and tokens exist; each gap is a health note, never a failed start | Phase 1 runs before IT and Slack say yes (Q3, Q5) |
+| 2026-10-29 | Secrets: a missing credential store raises `ConfigError` like a missing secret | Linux CI and locked-down laptops crashed `agentd run` with `NoKeyringError` |
+| 2026-10-29 | Task Scheduler task "Always-On Agent": at log-on, on unlock (session state change 8) and every 15 minutes; interactive, limited rights; MultipleInstances IgnoreNew; restart 3 times a minute apart; no time limit; runs in a hidden PowerShell that appends to `logs/agentd.out.log` | F01 diagram; Outlook COM and Credential Manager need the user's own session |
 
 ## Session log
 
@@ -290,3 +326,6 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | 1.5–1.7 | Done: task graph + approvals, scheduler + controls + notifier, privacy layer; 492 tests, ruff and mypy clean; coverage policy 99–100 %, privacy 97–100 %, runtime (new) 96–97 %, graphs 90–94 %, approvals 89 %+ | Set `me` in config/config.yaml; run 1.8 |
 | 2026-10-29 | 1.8–1.9 | Done: memory and context builder, recipe engine; 558 tests, ruff and mypy clean; coverage memory 82–98 %, recipes 91–97 % | Run 1.10 (Outlook adapters); recipes R01–R06 in 1.14 use the harness |
 | 2026-10-29 | 1.10–1.13 | Code done: Graph mail + calendar, COM parity, Teams, Power BI, pollers, tool registrations, Slack bot + cards + router + commands, Teams self note, email to self; 631 tests pass (excluding `tests/recipes`, which needs the uncommitted `agent.memory`), ruff and mypy clean apart from that import. Real-account checks blocked on Q3/Q5 | Commit `agent/memory`; when IT and Slack say yes: `agentd signin`, `agentd doctor`, `agentd run --fake --real-slack` |
+| 2026-10-29 | 1.15 | Done: console API, auth, SSE, settings overrides; 745 tests, ruff and mypy clean | Run 1.16 (console UI) |
+| 2026-10-29 | 1.16 | Done: console UI pixel-matched to the prototype; 747 backend tests, 23 console tests, 13 Playwright tests (12 pixel, 1 smoke); ruff, mypy, tsc clean | Run 1.17; decide Q14 |
+| 2026-10-29 | 1.17 | Code done: supervisor, health monitor, real `agentd run`, install script, `agentd status`; 762 backend tests, 23 console tests, 13 Playwright tests, ruff and mypy clean | Needs you: install the task on the laptop and check it survives sleep and unlock; then run 1.18 |

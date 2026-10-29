@@ -1,0 +1,12 @@
+# R06 Nightly digest: today's own actions with Undo, open approvals, hand-offs, shadow would-do counts.
+name: nightly-digest
+title: Nightly digest
+project: general
+status: shadow
+trigger: {schedule: nightly_digest}
+model: none
+data_classes: [metadata]
+tools: [read_digest_data, publish_digest]
+steps: agent.recipes.steps.nightly_digest:steps
+context: []
+output: digest

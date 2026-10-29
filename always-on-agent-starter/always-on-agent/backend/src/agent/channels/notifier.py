@@ -11,7 +11,7 @@ The batch lives in kv, so it survives a restart.
 import json
 import logging
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel
 
@@ -32,6 +32,7 @@ class Notification(BaseModel):
     text: str  # plain and short: what happened, what is needed
     task_id: str | None = None
     urgent: bool = False
+    blocks: list[dict[str, Any]] | None = None  # a richer card for channels that show one (Slack)
 
 
 class NotifySink(Protocol):
@@ -47,6 +48,9 @@ class Notifier:
         self._kv = kv
         self._sink = sink
 
+    def set_cap(self, max_pushes_per_day: int) -> None:
+        self._cap = max_pushes_per_day
+
     async def notify(self, note: Notification) -> Literal["sent", "batched"]:
         now = self._clock.now_utc()
         if not note.urgent:
@@ -56,7 +60,7 @@ class Notifier:
             if await self.pushes_today(now) >= self._cap:
                 await self._batch(note)
                 return "batched"
-        await self._send(note.text, now)
+        await self._send(note.text, now, note.blocks)
         return "sent"
 
     async def flush(self, force: bool = False) -> int:
@@ -66,6 +70,7 @@ class Notifier:
         if not batch or (self._clock.is_quiet(now) and not force):
             return 0
         lines = [f"- {n.text}" + (f" ({n.task_id})" if n.task_id else "") for n in batch]
+        # Batched items go out as one plain message; their cards are not repeated.
         await self._send(f"{len(batch)} update(s) since the last check-in:\n" + "\n".join(lines), now)
         await self._kv.delete(BATCH_KEY)
         return len(batch)
@@ -87,6 +92,10 @@ class Notifier:
         batch = [*await self.batched(), note]
         await self._kv.set(BATCH_KEY, json.dumps([n.model_dump() for n in batch]))
 
-    async def _send(self, text: str, now: datetime) -> None:
-        await self._sink.send(text)
+    async def _send(self, text: str, now: datetime, blocks: list[dict[str, Any]] | None = None) -> None:
+        send_card = getattr(self._sink, "send_card", None)
+        if blocks and send_card is not None:
+            await send_card(text, blocks)
+        else:
+            await self._sink.send(text)
         await self._kv.set(self._pushes_key(now), str(await self.pushes_today(now) + 1))

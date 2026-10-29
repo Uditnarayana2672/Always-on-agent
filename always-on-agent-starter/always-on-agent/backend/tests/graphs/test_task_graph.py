@@ -51,12 +51,12 @@ async def test_full_loop_event_draft_card_approve_execute_once(h: Harness) -> No
 
     assert h.posts() == ["Hello, the login works again. (v1)"]
     assert (await h.actions.get(action.id)).status == "done"  # type: ignore[union-attr]
-    assert await h.state() == "in_progress"
+    assert await h.state() == "waiting"  # sent: the next move is the caller's
     assert await h.runner.waiting_on(TASK) is None
     results = [r["result"] for r in await h.audit.for_action(action.id)]
     assert results[0].startswith("decision:proposed") and "approved" in results and results[-1] == "done"
     task = await h.tasks.get(TASK)
-    assert task is not None and task.next_action == "Done; see the activity log."
+    assert task is not None and task.next_action == "Sent; waiting for a reply."
 
 
 async def test_full_loop_with_the_worker_pool(h: Harness) -> None:

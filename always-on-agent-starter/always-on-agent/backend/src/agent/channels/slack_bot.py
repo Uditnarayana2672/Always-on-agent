@@ -186,6 +186,10 @@ class SlackBot:
         """NotifySink: a plain DM. Text may hold task titles from mail, so it is escaped."""
         await self.post(cards.escape(text))
 
+    async def send_card(self, text: str, blocks: list[dict[str, Any]]) -> None:
+        """NotifySink card: blocks were built by cards.py (escaped there); the fallback text is escaped."""
+        await self.post(cards.escape(text), blocks)
+
     async def send_dm(self, text: str, blocks: list[dict[str, Any]] | None = None) -> str:
         return await self.post(text, blocks)
 

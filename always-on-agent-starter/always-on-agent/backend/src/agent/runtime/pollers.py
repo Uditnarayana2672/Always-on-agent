@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 OVERLAP = timedelta(minutes=10)
 FIRST_LOOKBACK = timedelta(days=1)
 WATERMARK = "poll.{source}.since"
+LAST_OK = "poll.{connector}.last_ok"  # when a poll last succeeded (health monitor, F18)
 
 
 class Ingest(Protocol):
@@ -223,6 +224,7 @@ class Pollers:
             await self._report(connector, "degraded", str(exc)[:300])
             return 0
         await self._report(connector, "ok")
+        await self._kv.set(LAST_OK.format(connector=connector), self._clock.now_utc().isoformat())
         return count
 
     async def _report(self, connector: str, status: str, error: str | None = None) -> None:

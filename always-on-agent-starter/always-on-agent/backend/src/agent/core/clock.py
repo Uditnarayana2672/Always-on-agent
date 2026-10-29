@@ -36,6 +36,10 @@ class _BaseClock:
     """Shared calendar logic; subclasses supply now_utc()."""
 
     def __init__(self, config: Config) -> None:
+        self.reconfigure(config)
+
+    def reconfigure(self, config: Config) -> None:
+        """Pick up changed working or quiet hours (console settings) without a restart."""
         self._local = ZoneInfo(config.timezone)
         self._caller = ZoneInfo(config.caller_timezone)
         self._work_days = set(config.work.days)
@@ -115,3 +119,15 @@ class FrozenClock(_BaseClock):
 
     def now_utc(self) -> datetime:
         return self._now
+
+
+class ShiftedClock(_BaseClock):
+    """Real time, moved to start at a given instant (agentd run --fake: the fixtures' Wednesday)."""
+
+    def __init__(self, config: Config, start: datetime) -> None:
+        super().__init__(config)
+        _require_aware(start)
+        self._offset = start.astimezone(UTC) - datetime.now(UTC)
+
+    def now_utc(self) -> datetime:
+        return datetime.now(UTC) + self._offset

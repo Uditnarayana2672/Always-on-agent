@@ -1,4 +1,5 @@
 import importlib
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -31,7 +32,7 @@ def test_subpackage_imports(name: str) -> None:
     assert module.__doc__
 
 
-def test_status_prints_version() -> None:
-    result = CliRunner().invoke(app, ["status"])
-    assert result.exit_code == 0
+def test_status_prints_version(tmp_path: Path) -> None:
+    result = CliRunner().invoke(app, ["status", "--data-dir", str(tmp_path)])
+    assert result.exit_code == 1  # nothing runs in tmp_path: exit 1 so scripts can tell
     assert __version__ in result.output

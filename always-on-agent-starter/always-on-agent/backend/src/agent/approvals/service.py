@@ -345,6 +345,8 @@ class ApprovalService:
 
     def _card(self, action: ActionRequest, note: str | None = None) -> ApprovalCard:
         tool_def = self._registry.get(action.tool)
+        if note is None and json.loads(action.args_json).get("drafted_on") == "haiku":
+            note = "Drafted on Haiku (Sonnet not available): check the wording."
         label = (tool_def.description if tool_def and tool_def.description else action.tool).splitlines()[0]
         return ApprovalCard(
             action_id=action.id,

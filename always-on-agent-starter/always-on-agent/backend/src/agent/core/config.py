@@ -116,6 +116,7 @@ class PowerBIConfig(_Model):
     refresh_cap_per_day: int = Field(ge=0)
     watch: "PowerBIWatch" = Field(default_factory=lambda: PowerBIWatch())
     owned_datasets: list[str] = Field(default_factory=list)  # yours: a single transient retry may be Report
+    retry_own_transient: bool = True  # False: that one retry asks first too (console Settings)
 
 
 class DataRuleConfig(_Model):
@@ -186,6 +187,14 @@ class MailConfig(_Model):
     resync_days: int = Field(default=7, gt=0, le=30)  # full resync window after an expired delta token
     # Sensitivity labels that still allow reading the body; any other label means metadata only.
     open_labels: list[str] = Field(default_factory=lambda: ["Public", "General"])
+    # Inbox triage (R02) sender rules; addresses or @domain suffixes, case-insensitive.
+    manager: list[str] = Field(default_factory=list)  # always stays in Inbox, flagged
+    newsletter_senders: list[str] = Field(default_factory=list)
+    notification_senders: list[str] = Field(
+        default_factory=lambda: ["noreply@", "no-reply@", "donotreply@", "powerbi@", "notifications@"]
+    )
+    folder_notifications: str = "Notifications"
+    folder_newsletters: str = "Newsletters"
 
 
 class TeamsConfig(_Model):

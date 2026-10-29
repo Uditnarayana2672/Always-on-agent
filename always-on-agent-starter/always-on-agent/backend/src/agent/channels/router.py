@@ -12,7 +12,7 @@ If every channel fails, NotDelivered is raised and the job retries; nothing is s
 
 import logging
 from collections.abc import Sequence
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from agent.adapters.base import HealthStatus
 from agent.core.errors import AgentError
@@ -44,7 +44,17 @@ class NotificationRouter:
         self.last_channel: str | None = None
         self._fallback_noted = False
 
-    async def send(self, text: str) -> None:
+    def add(self, channel: NotifyChannel) -> None:
+        """A channel made after the router (it needs a client the adapters build); keeps the chain order."""
+        by_name = {c.name: c for c in [*self._chain, channel]}
+        order = [self._primary, *[n for n in CHAIN if n != self._primary]]
+        self._chain = [by_name[n] for n in order if n in by_name]
+
+    async def send_card(self, text: str, blocks: list[dict[str, Any]]) -> None:
+        """Like send, with a card for channels that can show one; the others get the text."""
+        await self.send(text, blocks)
+
+    async def send(self, text: str, blocks: list[dict[str, Any]] | None = None) -> None:
         errors: list[str] = []
         for channel in self._chain:
             status = await channel.health()
@@ -56,7 +66,11 @@ class NotificationRouter:
                 place = _PLACE.get(self._primary, self._primary)
                 message = f"({place} is not reachable, so this came here.)\n{text}"
             try:
-                await channel.send(message)
+                send_card = getattr(channel, "send_card", None)
+                if blocks and send_card is not None and message == text:
+                    await send_card(message, blocks)
+                else:
+                    await channel.send(message)
             except Exception as exc:
                 log.warning(
                     "notification channel failed",

@@ -1,6 +1,7 @@
 """Recipe YAML schema (F12).
 
     name: pbi-refresh            # must equal the file name (pbi-refresh.yaml)
+    title: Refresh on request    # optional display name in the console
     project: powerbi             # doxis | powerbi | general
     status: shadow               # live | shadow | off
     trigger: {poll: teams_chats, every: 5m, match: "app\\.powerbi\\.com|\\brefresh\\b"}
@@ -159,6 +160,7 @@ def _metadata_only() -> list[DataClass]:
 
 class RecipeSpec(_Model):
     name: str
+    title: str | None = Field(default=None, max_length=80)  # the console's display name
     version: int = Field(default=1, ge=1)
     project: Literal["doxis", "powerbi", "general"]
     status: Literal["live", "shadow", "off"]

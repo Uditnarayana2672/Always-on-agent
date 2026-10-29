@@ -189,6 +189,15 @@ class EventRepo(_Repo):
     async def get(self, event_id: int) -> dict[str, Any] | None:
         return await self._one(select(s.events).where(s.events.c.id == event_id))
 
+    async def by_source_since(self, source: str, since: datetime, limit: int = 1000) -> list[dict[str, Any]]:
+        """Events of one source received at or after `since`, oldest first."""
+        return await self._all(
+            select(s.events)
+            .where(s.events.c.source == source, s.events.c.received_at >= since)
+            .order_by(s.events.c.received_at, s.events.c.id)
+            .limit(limit)
+        )
+
     async def by_status(self, status: str, limit: int = 500) -> list[dict[str, Any]]:
         return await self._all(
             select(s.events).where(s.events.c.status == status).order_by(s.events.c.id).limit(limit)
@@ -319,6 +328,15 @@ class JobRepo(_Repo):
 
     async def for_task(self, task_id: str) -> list[Job]:
         rows = await self._all(select(s.jobs).where(s.jobs.c.task_id == task_id).order_by(s.jobs.c.id))
+        return [Job(**r) for r in rows]
+
+    async def failed_since(self, at: datetime) -> list[Job]:
+        """Jobs that gave up (no retry left) and were due at or after `at`."""
+        rows = await self._all(
+            select(s.jobs)
+            .where(s.jobs.c.status == "failed", s.jobs.c.available_at >= at)
+            .order_by(s.jobs.c.id)
+        )
         return [Job(**r) for r in rows]
 
     async def queue_length(self) -> int:
@@ -560,6 +578,12 @@ class AuditRepo(_Repo):
 
     async def recent(self, limit: int = 100) -> list[dict[str, Any]]:
         return await self._all(select(s.audit_log).order_by(s.audit_log.c.id.desc()).limit(limit))
+
+    async def since(self, at: datetime, limit: int = 2000) -> list[dict[str, Any]]:
+        """Rows at or after `at`, oldest first (digests, the activity page)."""
+        return await self._all(
+            select(s.audit_log).where(s.audit_log.c.at >= at).order_by(s.audit_log.c.id).limit(limit)
+        )
 
 
 class UndoRepo(_Repo):
@@ -925,6 +949,23 @@ class LessonRepo(_Repo):
                 .where(s.lessons.c.id == lesson_id)
                 .values(status=status, updated_at=self._now())
             )
+
+    async def get(self, lesson_id: str) -> dict[str, Any] | None:
+        return await self._one(select(s.lessons).where(s.lessons.c.id == lesson_id))
+
+    async def by_status(self, *statuses: str) -> list[dict[str, Any]]:
+        query = select(s.lessons).where(s.lessons.c.status.in_(statuses))
+        return await self._all(query.order_by(s.lessons.c.created_at.desc()))
+
+    async def decide(self, lesson_id: str, from_status: str, to_status: str) -> bool:
+        """Compare-and-set, so a second click (or a second tab) does nothing."""
+        async with self._engine.begin() as conn:
+            res = await conn.execute(
+                update(s.lessons)
+                .where(s.lessons.c.id == lesson_id, s.lessons.c.status == from_status)
+                .values(status=to_status, updated_at=self._now())
+            )
+        return res.rowcount == 1
 
     async def active(self, scope: str | None = None) -> list[dict[str, Any]]:
         query = select(s.lessons).where(s.lessons.c.status == "active")

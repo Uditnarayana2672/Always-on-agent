@@ -13,7 +13,7 @@ register_all(registry, adapters) is called once at start-up; `adapters` maps con
 """
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -103,6 +103,7 @@ class SendMail(_Args):
     reply_all: bool = False
     # The text the approval card shows. An edit on the card changes it; send rebuilds the draft with it.
     body: str = ""
+    drafted_on: Literal["haiku", "sonnet", "opus"] | None = None  # shown on the card; not sent
 
 
 async def _move_prepare(adapters: Adapters, args: BaseModel) -> dict[str, Any]:
