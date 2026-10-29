@@ -11,7 +11,7 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 ## Current position
 
 - Phase: 1
-- Next prompt: 1.18 (1.10–1.13 code done; their real-account checks wait on the Blockers below)
+- Next prompt: 1.18 needs you: two working weeks of real use, a Friday report each week, then confirm the Phase 1 gate. Phase 2 (2.1) after that. 1.10–1.13 real-account checks still wait on the Blockers below
 - Last updated: 2026-10-29
 
 ---
@@ -49,10 +49,72 @@ Status keys: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` block
 | [x] | 1.14 Phase 1 recipes R01–R06 | R01–R06 | 2026-10-29: `config/recipes/*.yaml`, `recipes/steps/*`, `recipes/views.py`, `runtime/assembly.py`, `runtime/fake.py`; 25 recipe tests + fake-day test; `agentd run --fake --demo-only` posts brief, check-in and digest to the fake Slack DM |
 | [x] | 1.15 Console API | F15 | 2026-10-29: `api/{app,auth,models,service,stream,server}.py`, `runtime/settings.py`; 20 API tests; `agentd console` prints the one-time link; `agentd run --fake` serves the console on 127.0.0.1:8765 |
 | [x] | 1.16 Console UI | F15 | 2026-10-29: `console/src` (shell, 10 pages, live stream); 23 Vitest page tests; Playwright: 12 pixel comparisons with the prototype (9 pages at 1440 px, 3 at 400 px; all within 0.1 %, tasks and connectors identical) and the smoke test approving a drafted reply on `agentd run --fake --live-recipes` |
-| [!] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | 2026-10-29: `runtime/supervisor.py` (lock, 30 s heartbeat file, wake catch-up, drain), `runtime/health.py` (incidents said once), `runtime/real.py` (`agentd run` on whatever is set up), `scripts/install_task.ps1`, `agentd status`; 14 tests. Needs you: run `scripts\install_task.ps1 -StartNow` on the laptop, then sleep, unlock and check `uv run agentd status` |
-| [ ] | 1.18 End-to-end run and Phase 1 exit check | all | |
+| [x] | 1.17 Health monitor, supervisor, Windows install | F01, F18 | 2026-10-29: `runtime/supervisor.py` (lock, 30 s heartbeat file, wake catch-up, drain), `runtime/health.py` (incidents said once), `runtime/real.py` (`agentd run` on whatever is set up), `scripts/install_task.ps1`, `agentd status`; 14 tests. Task installed on the laptop; survived sleep and unlock; `agentd status` shows running and "Last wake from sleep ... (caught up)". A 50 s Modern Standby did not count as a wake (gap limit 90 s), as designed |
+| [~] | 1.18 End-to-end run and Phase 1 exit check | all | 2026-10-29: `tests/e2e/test_phase1.py` passes (08:00–20:00 IST on FakeWorld, Slack bot on a fake web client, sleep 12:00–14:00, every effect exactly once, nothing above its mode); edge-case list below, 2 tests added (E07, E28); `docs/runbook.md`; R01, R02, R04, R06 Live, R03 and R05 Shadow. Needs you: two working weeks of real use, then confirm the gate |
 
 **Phase 1 gate:** two working weeks of real use with no action outside its mode; brief read on most days.
+
+### Phase 1 edge-case coverage (architecture section 11, prompt 1.18)
+
+✓ covered · ◐ the Phase 1 part is covered, the rest comes with a later feature · ✗ gap · — later phase by design. Test names are `file::test` under `backend/tests/`.
+
+| # | | Covered by |
+| --- | --- | --- |
+| E01 | ✓ | `runtime/test_scheduler::sleep_from_1800_to_1030_runs_brief_once_and_one_checkin`, `missed_checkins_coalesce`; `runtime/test_supervisor::heartbeat_gap_triggers_catch_up`; `e2e/test_phase1` (sleep 12:00–14:00) |
+| E02 | ✓ | `runtime/test_supervisor::lock_prevents_a_second_instance`, `a_crashed_instance_leaves_no_stale_lock` |
+| E03 | ✓ | `policy/test_outbox::crash_after_send_does_not_send_twice`, `crash_before_send_sends_once_on_recovery`; `graphs/test_task_graph::crash_between_execute_and_record_does_not_double_send`; `runtime/test_workers::stuck_lock_is_recovered_after_ttl` |
+| E04 | ✗ | `runtime/test_doctor::network_failure_suggests_proxy` only. Gap: no CA-bundle setting in config; httpx reads `SSL_CERT_FILE` from the environment |
+| E05 | ◐ | `runtime/test_scheduler::chase_window_follows_european_clock_change`; `core/test_clock::chase_window_across_dst`. R11 chasing: Phase 2 |
+| E06 | ✓ | `runtime/test_scheduler::holiday_skip`, `catch_up_across_a_holiday_does_not_run_its_brief` |
+| E07 | ✓ | `model/test_gateway::429_backoff_honours_retry_after`, `retries_exhausted`; `runtime/test_supervisor::new_incidents_of_one_run_share_one_dm_and_info_never_dms` (ICA incident, one DM); new `recipes/test_phase1_recipes::code_only_steps_continue_while_the_model_is_down` |
+| E08 | ✓ | `model/test_gateway::schema_repair_retry`, `schema_still_invalid_raises`; `runtime/test_workers::poison_job_fails_twice_then_surfaces` |
+| E09 | ✓ | `privacy/test_pseudonymiser::restore_blocks_an_invented_token`; `recipes/test_phase1_recipes::brief_ranks_clocks_first_and_keeps_ids_when_the_model_rewords`; `policy/test_outbox::recipient_dropped_from_task_blocks_send`; `adapters/test_teams_graph::post_refuses_members_the_approval_did_not_cover` |
+| E10 | ✓ | `model/test_gateway::sonnet_for_listed_purpose_then_budget_downgrade`; `recipes/test_phase1_recipes::draft_made_on_haiku_is_marked` |
+| E11 | ✓ | `model/test_gateway_privacy::leak_stops_the_call`; `privacy/test_pseudonymiser::leak_check` |
+| E12 | ◐ | `model/test_gateway_privacy::data_rule_stops_the_call`; `memory/test_context_builder::metadata_level_withholds_text_but_keeps_pointers`; `recipes/test_recipes::recipe_gets_a_packet_reduced_to_what_it_declared`. R15, R16: Phase 2 |
+| E13 | ◐ | `model/test_gateway_privacy::undeclared_image_is_refused`; `privacy/test_data_rule_outbound::reduce_chat_and_images`. Screenshots (A08): Phase 2 |
+| E14 | ✓ | `recipes/test_phase1_recipes::triage_leaves_unsure_or_injected_mail_alone`; `recipes/test_recipes::live_recipe_drafts_through_the_gate_and_flags_fetched_content`; `policy/test_outbox::lowering_attempt_is_audited` |
+| E15 | ✓ | `recipes/test_phase1_recipes::draft_with_an_outside_cc_becomes_hand_off`; `graphs/test_task_graph::outside_recipient_is_handed_off`; `e2e/test_phase1` |
+| E16 | ✓ | `graphs/test_task_graph::caller_reply_invalidates_and_a_new_draft_follows`, `reply_after_approve_but_before_send_still_stops_it` |
+| E17 | ✓ | `graphs/test_task_graph::double_approve_resolves_once` (Slack and console at once), `approve_and_reject_race`; `db/test_repositories::action_compare_and_set` |
+| E18 | ✓ | `policy/test_outbox::crash_after_send_does_not_send_twice`; `adapters/test_contracts::mail_send_once_per_key_and_found_after`; `adapters/test_outlook_graph::send_stamps_the_idempotency_header_and_find_sent_uses_it` |
+| E19 | ✓ | `graphs/test_task_graph::expiry_keeps_the_draft_and_needs_you` |
+| E20 | ◐ | `runtime/test_coordinator::duplicate_delivery_is_ignored`; `db/test_repositories::event_dedupe`. Report diff by state (A07): Phase 2 |
+| E21 | ✓ | `runtime/test_coordinator::one_mail_with_two_incidents_makes_two_jobs` |
+| E22 | ◐ | `ledger/test_ledger::reassigned_away`. Seeing it in the report (A07): Phase 2 |
+| E23 | ◐ | `ledger/test_ledger::reopen_moves_done_to_in_progress`. "User notified": `ledger.reopen` does not notify; the caller (A07 report diff, Phase 2) must |
+| E24 | — | A07, Phase 2 |
+| E25 | — | A07, R08, Phase 2 |
+| E26 | ✓ | `adapters/test_outlook_graph::expired_delta_resyncs_seven_days_and_the_coordinator_dedupes` |
+| E27 | ✓ | `adapters/test_graph_client::401_twice_means_sign_in_again`; `runtime/test_pollers::signed_out_marks_down`; `runtime/test_supervisor::an_incident_is_announced_once_and_again_only_after_it_cleared` (a "sign in again" DM, not a card) |
+| E28 | ✓ | new `runtime/test_supervisor::without_an_app_registration_mail_falls_back_to_outlook_com`; `adapters/test_outlook_com` |
+| E29 | ✓ | `runtime/test_coordinator::edited_message_is_a_new_event_and_actionable`, `deleted_message_is_recorded_never_actionable` |
+| E30 | — | R16, Phase 2 |
+| E31 | ✓ | `channels/test_router::fallback_when_slack_is_red_says_so_once`, `a_failing_send_tries_the_next_channel` |
+| E32 | ◐ | `adapters/test_powerbi_rest::running_refresh_is_reported_not_doubled`; `adapters/test_contracts::refresh_running_is_not_doubled`. R12: Phase 2 |
+| E33 | ✓ | `adapters/test_powerbi_rest::cap_warns_on_the_last_and_refuses_after`; `adapters/test_contracts::refresh_at_cap_is_refused` |
+| E34 | ✓ | `adapters/test_powerbi_rest::403_hands_off_with_the_owner` |
+| E35–E41 | — | R13, A06, A09, A08, R10, R07, R11: Phase 2 |
+| E42–E43 | — | A12 Citrix: Phase 4 |
+| E44 | ✓ | `memory/test_memory::summary_mismatch_triggers_one_rewrite_with_the_problems` |
+| E45 | ✗ | Gap: the user has no way to delete a fact yet (only the internal `delete_fact`). Build with 2.15 |
+| E46 | ✓ | `runtime/test_coordinator::age_boost_at_claim_time`, `age_boost_is_capped` |
+| E47 | ✓ | `runtime/test_workers::poison_job_fails_twice_then_surfaces` |
+| E48 | ✓ | `recipes/test_recipes::hand_off_tool_is_refused` |
+| E49 | ✓ | `recipes/test_recipes::two_matching_recipes_both_run_unless_exclusive`, `both_matching_recipes_run_on_the_task` |
+| E50 | ✓ | `runtime/test_controls::daily_push_cap`; `channels/test_router::push_cap_batches_into_the_next_check_in` |
+| E51 | — | A10, Phase 2 |
+| E52 | — | R07, Phase 2 (translation in memory exists: `memory/test_context_builder::translation_is_used_and_marked`) |
+| E53 | ✓ | `runtime/test_scheduler::leave_mode_pauses_brief_and_chases_not_checkins`; `graphs/test_task_graph::leave_mode_suppresses_caller_drafts` |
+
+**Rows not yet covered by design (later phases):** E24, E25, E30, E35–E43, E51, E52, and the later halves of E05, E12, E13, E20, E22, E23, E32.
+
+**Gaps found in 1.18 (Phase 1 features):**
+- E04: no CA-bundle setting in config (architecture says "CA bundle from config"); today only `SSL_CERT_FILE` in the environment works.
+- E45: no user-facing fact deletion.
+- Recipe hot reload is not wired: `RecipeLoader.reload_if_changed()` exists but nothing calls it, so a hand edit of `config/recipes/*.yaml` needs a restart. Console status changes reload at once.
+- Refresh alerts name the dataset by id (`Refresh of bab6126e-... failed`), not by name.
+- `logs/agentd.out.log` is UTF-16 with PowerShell error wrappers (Windows PowerShell 5.1 `*>>`).
 
 ## Phase 2 — Doxis and Power BI recipes
 
@@ -309,6 +371,10 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | `agentd run` (real) starts with whatever is configured: Graph adapters once `graph.client_id` is set, Outlook COM on Windows otherwise, the ICA model when its URL and key exist, Slack when its id and tokens exist; each gap is a health note, never a failed start | Phase 1 runs before IT and Slack say yes (Q3, Q5) |
 | 2026-10-29 | Secrets: a missing credential store raises `ConfigError` like a missing secret | Linux CI and locked-down laptops crashed `agentd run` with `NoKeyringError` |
 | 2026-10-29 | Task Scheduler task "Always-On Agent": at log-on, on unlock (session state change 8) and every 15 minutes; interactive, limited rights; MultipleInstances IgnoreNew; restart 3 times a minute apart; no time limit; runs in a hidden PowerShell that appends to `logs/agentd.out.log` | F01 diagram; Outlook COM and Credential Manager need the user's own session |
+| 2026-10-29 | Console stream watcher fingerprints open approvals by their (id, status, hash) rows, not count + max hash | Approving a draft closes one card and opens the send card; count and max hash often stayed the same, so the console missed the new card (flaky smoke test) |
+| 2026-10-29 | Reset keeps `settings.*` (console overrides and policy rows) | F16 says reset deletes task memory, lessons and schedules; it was also wiping the Settings page changes |
+| 2026-10-29 | The e2e day drives the scheduler minute by minute (`tick`, each cron slot and interval as it falls due, then the workers); the Slack bot is the notify and approval channel on a fake web client, marked connected | Same path as a real run; the scheduler's 3-minute gap rule needs a beat every minute |
+| 2026-10-29 | R01, R02, R04, R06 Live; R03 and R05 Shadow until the user decides (prompt 1.18) | Phase 1 exit; R02 now files, flags and categorises real mail (Report, with Undo) once the agent restarts |
 
 ## Session log
 
@@ -329,3 +395,5 @@ From `docs/architecture.md` section 16. Record the answer and date when known.
 | 2026-10-29 | 1.15 | Done: console API, auth, SSE, settings overrides; 745 tests, ruff and mypy clean | Run 1.16 (console UI) |
 | 2026-10-29 | 1.16 | Done: console UI pixel-matched to the prototype; 747 backend tests, 23 console tests, 13 Playwright tests (12 pixel, 1 smoke); ruff, mypy, tsc clean | Run 1.17; decide Q14 |
 | 2026-10-29 | 1.17 | Code done: supervisor, health monitor, real `agentd run`, install script, `agentd status`; 762 backend tests, 23 console tests, 13 Playwright tests, ruff and mypy clean | Needs you: install the task on the laptop and check it survives sleep and unlock; then run 1.18 |
+| 2026-10-29 | 1.17 | Done on the laptop: task installed, survived sleep and unlock, status running and caught up. Fixed the console stream missing replaced approvals (Playwright smoke 3/3) | Run 1.18 |
+| 2026-10-29 | 1.18 | Code part done: e2e simulated day, edge-case coverage list, E07 and E28 tests, runbook, reset keeps settings, R01/R02/R04/R06 Live; 767 backend tests, ruff and mypy clean | Needs you: restart the agent so the Live recipes load, two working weeks of real use with a Friday report, then confirm the Phase 1 gate. Gaps listed under the edge-case table |

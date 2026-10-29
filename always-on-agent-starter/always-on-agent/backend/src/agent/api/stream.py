@@ -109,19 +109,22 @@ class Watcher:
         async with self._rt.engine.connect() as conn:
             audit = (await conn.execute(select(func.max(s.audit_log.c.id)))).scalar()
             tasks = (await conn.execute(select(func.max(s.tasks.c.updated_at), func.count()))).one()
+            # Every open card, not a count and a max: approving a draft closes one card and opens the
+            # send card, which can leave both unchanged.
+            requests = s.action_requests.c
             approvals = (
                 await conn.execute(
-                    select(func.count(), func.max(s.action_requests.c.content_hash)).where(
-                        s.action_requests.c.status.in_(("proposed", "edited"))
-                    )
+                    select(requests.id, requests.status, requests.content_hash)
+                    .where(requests.status.in_(("proposed", "edited")))
+                    .order_by(requests.id)
                 )
-            ).one()
+            ).all()
         pool = await self._rt.pool.state()
         controls = await self._rt.controls.state()
         return {
             "activity": audit,
             "task": (str(tasks[0]), tasks[1]),
-            "approval": (approvals[0], approvals[1]),
+            "approval": tuple(tuple(row) for row in approvals),
             "worker": (
                 pool.queue_length,
                 tuple((w.worker_id, w.job_id, w.step) for w in pool.workers),

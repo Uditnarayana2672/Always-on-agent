@@ -284,6 +284,35 @@ async def test_watcher_sees_changes_made_outside_the_api(env: Env) -> None:
         env.hub.unsubscribe(queue)
 
 
+async def test_watcher_sees_one_approval_replaced_by_another(env: Env) -> None:
+    # Approving a draft closes one card and the worker opens the send card: same count, and the
+    # largest open hash can stay the same, yet the console must still hear about it.
+    from sqlalchemy import update
+
+    from agent.db import schema as s
+
+    table = s.action_requests
+
+    async def set_row(action_id: str, **values: str) -> None:
+        async with env.rt.engine.begin() as conn:
+            await conn.execute(update(table).where(table.c.id == action_id).values(**values))
+
+    watcher = Watcher(env.rt, env.hub)
+    queue = env.hub.subscribe()
+    try:
+        first = await env.propose("Draft one")
+        second = await env.propose("Draft two")
+        await set_row(first, content_hash="a" * 64)
+        await set_row(second, content_hash="f" * 64)
+        await watcher.check()
+        await set_row(first, status="done")
+        third = await env.propose("Email to send")
+        await set_row(third, content_hash="0" * 64)
+        assert "approval" in await watcher.check()
+    finally:
+        env.hub.unsubscribe(queue)
+
+
 # ---------------------------------------------------------------- pages
 
 
@@ -318,7 +347,8 @@ async def test_pages_answer_on_the_fake_day(env: Env) -> None:
     assert (await env.get("/api/memory/nope")).status_code == 404
     recipes = {r["slug"]: r for r in (await env.get("/api/recipes")).json()}
     assert recipes["morning-brief"]["name"] == "Morning brief"
-    assert recipes["morning-brief"]["status"] == "Shadow"
+    assert recipes["morning-brief"]["status"] == "Live"  # Phase 1: R01, R02, R04, R06 Live
+    assert recipes["draft-replies"]["status"] == "Shadow"  # R03 and R05 until the user decides
 
 
 async def test_recipe_status_and_save_keep_the_rules(env: Env, tmp_path: Path) -> None:

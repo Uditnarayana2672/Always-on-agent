@@ -2,7 +2,7 @@
 name: inbox-triage
 title: Inbox triage
 project: general
-status: shadow
+status: live
 trigger: {poll: mail, every: 5m}
 model: haiku
 data_classes: [metadata, text]

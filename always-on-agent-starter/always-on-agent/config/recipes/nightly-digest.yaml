@@ -2,7 +2,7 @@
 name: nightly-digest
 title: Nightly digest
 project: general
-status: shadow
+status: live
 trigger: {schedule: nightly_digest}
 model: none
 data_classes: [metadata]

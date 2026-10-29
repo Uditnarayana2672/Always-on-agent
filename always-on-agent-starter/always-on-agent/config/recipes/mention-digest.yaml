@@ -2,7 +2,7 @@
 name: mention-digest
 title: Mention digest
 project: general
-status: shadow
+status: live
 trigger: {schedule: checkin}
 model: none
 data_classes: [metadata]

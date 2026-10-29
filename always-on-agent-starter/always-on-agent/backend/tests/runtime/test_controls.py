@@ -11,6 +11,7 @@ from agent.core.errors import ControlError
 from agent.db.repositories import ActionRepo, AuditRepo, KvRepo, MemoryRepo, Task, TaskRepo
 from agent.policy.gate import Gate, GateContext
 from agent.runtime.controls import Controls, Resetter
+from agent.runtime.settings import OVERRIDES_KEY, POLICY_KEY
 from tests.policy import tools as t
 
 T0 = datetime(2026, 3, 25, 4, 30, tzinfo=UTC)  # Wed 10:00 IST
@@ -116,8 +117,11 @@ async def test_reset_needs_token_and_pause_and_keeps_the_audit_log(
         await controls.reset(token)
 
     await controls.pause()
+    await kv.set(OVERRIDES_KEY, '{"schedule": {"brief": "08:30"}}')
+    await kv.set(POLICY_KEY, '{"save_draft": "report"}')
     result = await controls.reset(token)
     assert (result.tasks, result.actions_detached, forgotten) == (1, 1, ["INC30114872"])
+    assert await kv.get(OVERRIDES_KEY) and await kv.get(POLICY_KEY)  # Settings page changes stay
     assert await TaskRepo(engine, clock).list() == []
     action = await actions.get("A1")
     assert action is not None and action.task_id is None and action.status == "invalidated"

@@ -448,3 +448,30 @@ async def test_real_run_starts_with_nothing_set_up(tmp_path: Path, monkeypatch: 
         for _, _, stop in parts.extras:
             await stop()
         await parts.runtime.stop()
+
+
+async def test_without_an_app_registration_mail_falls_back_to_outlook_com(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Edge case E28: no Graph app registration, so mail and calendar come from Outlook desktop."""
+    from agent.adapters import outlook_com
+    from agent.runtime import real
+
+    class Com:
+        pass
+
+    monkeypatch.setattr(outlook_com, "OutlookComAdapter", Com)
+    monkeypatch.setattr(real.sys, "platform", "win32")
+    clock = FrozenClock(CONFIG, T0)
+    assert not CONFIG.graph.client_id
+    graph_only = CONFIG.model_copy(update={"mail": CONFIG.mail.model_copy(update={"backend": "graph"})})
+    wiring, strict = real.RealWiring(CONFIG), real.RealWiring(graph_only)
+    try:
+        out = await wiring.adapters(None, None, clock)  # type: ignore[arg-type]
+        assert set(out) == {"outlook", "calendar"} and out["outlook"] is out["calendar"]
+        assert isinstance(out["outlook"], Com)
+        assert any("no app registration" in n for n in wiring.notes)
+        assert await strict.adapters(None, None, clock) == {}  # type: ignore[arg-type]  # mail.backend: graph
+    finally:
+        await wiring.http.aclose()
+        await strict.http.aclose()

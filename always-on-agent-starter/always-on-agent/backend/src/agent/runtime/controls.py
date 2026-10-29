@@ -189,7 +189,7 @@ def _digest(token: str) -> str:
 class Resetter:
     """Deletes task memory. The audit log and the action rows it references are kept (task id cleared)."""
 
-    KEEP_KV_PREFIXES = ("delta.", "cursor.", "controls")
+    KEEP_KV_PREFIXES = ("delta.", "cursor.", "controls", "settings.")  # settings: the console's changes
 
     def __init__(
         self,

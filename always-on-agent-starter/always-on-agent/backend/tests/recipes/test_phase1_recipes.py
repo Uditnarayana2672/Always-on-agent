@@ -7,6 +7,7 @@ import pytest
 
 from agent.adapters.fakes.world import FIXTURE_NOW
 from agent.core.config import CONFIG_DIR, Config, load_config
+from agent.core.errors import ModelUnavailable
 from agent.db.repositories import Task
 from agent.model.gateway import GatewayResult
 from agent.privacy.pseudonymiser import KnownPerson
@@ -169,7 +170,7 @@ async def test_triage_keeps_manager_mail_in_inbox_flagged() -> None:
         execute=True,
     )
     assert tools(result) == ["flag_mail"]  # never moved, even when labelled a notification
-    assert result.results[0].status == "shadow"  # recipes ship in shadow: recorded, not run
+    assert result.results[0].status == "done"  # R02 is Live (prompt 1.18): Report runs on its own
 
 
 async def test_triage_rules_first_and_never_deletes() -> None:
@@ -185,11 +186,12 @@ async def test_triage_needs_reply_opens_a_reply_task() -> None:
         mail_fixture("AAMkAGFAKE0018"),
         config=config(),
         model_responses={"triage": [{"label": "needs_reply", "confidence": 0.9}]},
+        execute=True,
     )
     assert tools(result) == ["flag_mail", "open_reply_task"]
     # A closed label carries no text into the arguments, so these stay Report (architecture R02).
     assert not result.proposals[0].triggered_by_fetched_content
-    assert {r.decision.mode for r in result.results if r.decision} == {"report"}
+    assert [r.status for r in result.results] == ["done", "done"]  # ran on their own: Ask would wait
 
 
 async def test_triage_leaves_unsure_or_injected_mail_alone() -> None:
@@ -512,3 +514,50 @@ async def test_nightly_digest_has_undo_open_approvals_and_shadow_counts() -> Non
 async def test_quiet_day_still_gets_a_short_digest() -> None:
     result = await run_recipe_on_fixture("nightly-digest", None, config=config())
     assert "No actions on my own today" in slack_text(result)
+
+
+# ---------------------------------------------------------------- E07 model outage
+
+
+class ModelDown:
+    """The gateway after its retries: ICA is down or throttling (edge case E07)."""
+
+    async def run(self, purpose: str, messages: list[Any], schema: Any, data_classes: Any, **kw: Any) -> Any:
+        raise ModelUnavailable("ICA failed after 4 attempts: HTTP 503")
+
+
+async def test_code_only_steps_continue_while_the_model_is_down() -> None:
+    down = ModelDown()
+    brief = await run_recipe_on_fixture(
+        "morning-brief",
+        None,
+        config=config(),
+        seed=seed_tasks,
+        model=down,  # type: ignore[arg-type]
+    )
+    assert brief.results[0].status == "done" and "INC30114872" in brief.slack[0]["text"]
+    assert any("kept as written by code (ModelUnavailable)" in n for n in brief.notes)
+
+    manager = await run_recipe_on_fixture(
+        "inbox-triage",
+        mail_fixture("AAMkAGFAKE0011"),
+        config=config(),
+        model=down,  # type: ignore[arg-type]
+    )
+    assert tools(manager) == ["flag_mail"]  # sender rules need no model
+    other = await run_recipe_on_fixture(
+        "inbox-triage",
+        mail_fixture("AAMkAGFAKE0018"),
+        config=config(),
+        model=down,  # type: ignore[arg-type]
+    )
+    assert tools(other) == [] and any("not classified (ModelUnavailable)" in n for n in other.notes)
+
+    draft = await run_recipe_on_fixture(
+        "draft-replies",
+        mail_fixture("AAMkAGFAKE0012"),
+        config=config(),
+        seed=reply_seed("AAMkAGFAKE0012", "AAQkAGFAKECONV0012"),
+        model=down,  # type: ignore[arg-type]
+    )
+    assert tools(draft) == [] and any("no draft (ModelUnavailable)" in n for n in draft.notes)

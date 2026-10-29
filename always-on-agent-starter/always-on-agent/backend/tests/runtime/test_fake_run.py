@@ -17,15 +17,15 @@ async def test_fake_day_reaches_the_fake_slack_dm(tmp_path: Path) -> None:
         assert texts[0].startswith("Morning brief")
         assert any("unanswered in Teams" in t for t in texts)
         digest = next(t for t in texts if t.startswith("Today's digest"))
-        assert "inbox-triage would have acted" in digest  # triage ran, in shadow
+        assert "Moved a mail to Newsletters (undo " in digest  # triage is Live (prompt 1.18)
         rows = await runtime.audit.recent(500)
-        triage = {
-            r["tool"]
-            for r in rows
-            if r["recipe"] == "inbox-triage" and r["result"].startswith("decision:shadow")
-        }
+        triage = {r["tool"] for r in rows if r["recipe"] == "inbox-triage" and r["result"] == "done"}
         assert {"move_mail", "flag_mail"} <= triage  # newsletter moved, manager mail flagged
-        assert not any(r["tool"] in ("move_mail", "flag_mail") and r["result"] == "done" for r in rows)
+        assert world.mail.folders["AAMkAGFAKE0013"] == "Newsletters"
+        assert world.mail.folders["AAMkAGFAKE0011"] == "Inbox"
+        assert not any(
+            r["result"].startswith("decision:shadow") for r in rows if r["recipe"] == "inbox-triage"
+        )
         assert {t.id for t in await runtime.tasks.list()} >= {"INC30114872", "ENH-014", "REF-0412"}
     finally:
         await runtime.stop()

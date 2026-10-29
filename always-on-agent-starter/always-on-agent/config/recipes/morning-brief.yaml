@@ -3,7 +3,7 @@
 name: morning-brief
 title: Morning brief
 project: general
-status: shadow
+status: live
 trigger: {schedule: brief}
 model: haiku
 data_classes: [metadata, text]
